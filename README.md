@@ -13,7 +13,7 @@ explain(x, f, data) # explain f(x) using a reference sample population 'data'
   <img src="https://interpretable-ml.github.io/images/sampleExplanation.png" />
 </p>
 
-By explaining many predictions at once you can gain an intuition of how the model behaves:
+By explaining many predictions at once you can gain an intuition of how the model behaves across an entire dataset:
 ```python
 [explain(data[i,:], f, data) for i in range(size(data)[1])]
 ```
