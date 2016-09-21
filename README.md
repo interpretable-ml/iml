@@ -11,7 +11,7 @@ By explaining many predictions at you can gain an intuition of how the model beh
 ```python
 [explain(data[i,:], f, data) for i in range(size(data)[1])]
 ```
-![](https://interpretable-ml.github.io/images/sampleModelExplanation.png)
+<div style="text-align:center"><img src="https://interpretable-ml.github.io/images/sampleModelExplanation.png" /></div>
 
 ## Getting started
 
