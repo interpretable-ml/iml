@@ -5,13 +5,17 @@ Interpretable ML is a project aimed at allowing predictions from any model to ex
 ```python
 explain(x, f, data) # explain f(x) using a reference sample population 'data'
 ```
-![](https://interpretable-ml.github.io/images/sampleExplanation.png)
+<p align="center">
+  <img src="https://interpretable-ml.github.io/images/sampleExplanation.png" />
+</p>
 
 By explaining many predictions at you can gain an intuition of how the model behaves.
 ```python
 [explain(data[i,:], f, data) for i in range(size(data)[1])]
 ```
-<div style="text-align:center"><img src="https://interpretable-ml.github.io/images/sampleModelExplanation.png" /></div>
+<p align="center">
+  <img src="https://interpretable-ml.github.io/images/sampleModelExplanation.png" />
+</p>
 
 ## Getting started
 
