@@ -1,4 +1,4 @@
-module iML
+module IML
 
 import StatsBase: logit, logistic
 import DataFrames
