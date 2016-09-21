@@ -1,14 +1,17 @@
 # iML
 
-Interpretable ML is a project aimed at allowing predictions from any model to explained, regardless of how complex that model may be. The iML package is the project's primary collection of tools for explaining model predictions. A single function is exported:
+Interpretable ML is a project aimed at allowing predictions from any model to explained, regardless of how complex that model may be. The iML package is the project's primary collection of tools for explaining model predictions. A single function is exported which produces an explanation that can be visualized in a Jupyter notebook:
 
 ```python
-explain(x, f, data)
+explain(x, f, data) # explain f(x) using a reference sample population 'data'
 ```
+![](https://interpretable-ml.github.io/images/sampleExplanation.png)
 
-which produces an explanation that can be visualized in a Jupyter notebook.
-
-
+By explaining many predictions at you can gain an intuition of how the model behaves.
+```python
+[explain(data[i,:], f, data) for i in range(size(data)[1])]
+```
+![](https://interpretable-ml.github.io/images/sampleModelExplanation.png)
 
 ## Getting started
 
