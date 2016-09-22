@@ -98,6 +98,7 @@ export class AdditiveForce extends HTMLElement {
       "#994499", "#22AA99", "#AAAA11", "#6633CC", "#E67300"
     ].map(x => hsl(x));
     window.this_af = this;
+    this.brighterColors = [1.45, 1.6].map((v,i)=>this.colors[i].brighter(v));
 
     this.root = select(this);
     this.wrapper = this.root.select('.force-bar-wrapper');
@@ -107,7 +108,7 @@ export class AdditiveForce extends HTMLElement {
     this.axisElement = this.root.select(".force-bar-axis");
     this.redraw = debounce(() => this.draw(this.lastExplanation), 200);
     this.baseValue = 0;
-    let tickFormat = format(",.2f");
+    this.tickFormat = format(",.4");
 
     this.colors.map((c,i) => {
       let grad = this.svg.append("linearGradient")
@@ -142,7 +143,7 @@ export class AdditiveForce extends HTMLElement {
       .scale(this.scaleCentered)
       .tickSizeInner(4)
       .tickSizeOuter(0)
-      .tickFormat(d => tickFormat(this.invLinkFunction(d)))
+      .tickFormat(d => this.tickFormat(this.invLinkFunction(d)))
       .tickPadding(-18);
   }
 
@@ -167,6 +168,13 @@ export class AdditiveForce extends HTMLElement {
   draw(explanation) {
     this.lastExplanation = explanation;
 
+    // record the index of each feature
+    for (let i = 0; i < explanation.featureNames.length; ++i) {
+      if (explanation.features.hasOwnProperty(i)) {
+        explanation.features[i].ind = i;
+      }
+    }
+
     this.baseValue = explanation.baseValue;
     if (explanation.link === "identity") {
       this.invLinkFunction = x => this.baseValue + x; // logistic is inverse of logit
@@ -175,7 +183,6 @@ export class AdditiveForce extends HTMLElement {
     } else {
       console.log("ERROR: Unrecognized link function: ", explanation.link)
     }
-
 
     let data = sortBy(explanation.features, x=>-1/(x.effect+1e-10));
     let width = this.wrapper.node().offsetWidth;
@@ -245,7 +252,7 @@ export class AdditiveForce extends HTMLElement {
         .attr("class", "force-bar-labels")
         .attr("y", d => 48+this.topOffset)
       .merge(labels)
-        .text((d, i) => d.value !== undefined && d.value != null ? explanation.featureNames[i]+" = "+d.value : explanation.featureNames[i])
+        .text(d => d.value !== undefined && d.value != null ? explanation.featureNames[d.ind]+" = "+this.tickFormat(d.value) : explanation.featureNames[d.ind])
         .attr("fill", d=>d.effect > 0 ? this.colors[0] : this.colors[1])
         .attr("stroke", function(d, i) {
           d.textWidth = Math.max(this.getComputedTextLength(), scale(Math.abs(d.effect))-10);
@@ -333,8 +340,8 @@ export class AdditiveForce extends HTMLElement {
         })
         .attr("stroke", (d,i) => {
           if (joinPointIndex === i+1 || Math.abs(d.effect) < 1e-8) return "#rgba(0,0,0,0)";
-          else if (d.effect > 0) return this.colors[0].brighter(1.6);
-          else return this.colors[1].brighter(1.6);
+          else if (d.effect > 0) return this.brighterColors[0];
+          else return this.brighterColors[1];
         });
     blockDividers.exit().remove();
 
