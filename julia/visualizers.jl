@@ -30,7 +30,7 @@ function visualize(e::Explanation, v::AdditiveForceVisualizer)
         "features" => [Dict(
             "name" => e.data.groupNames[i],
             "effect" => e.effects[i],
-            "value" => length(e.data.groups[i]) == 1 ? e.x[e.data.groups[i][1]] : nothing
+            "value" => length(e.data.groups[i]) == 1 ? Float64(e.x[e.data.groups[i][1]]) : nothing
         ) for i in 1:length(e.data.groupNames)]
     )
     HTML("<additive-force explanation='$(json(data))'>$errMsg</additive-force>")
@@ -62,7 +62,7 @@ function visualize(arr::Array{Explanation}, v::AdditiveForceVisualizer)
         "features" => [Dict(
             "name" => e.data.groupNames[i],
             "effect" => e.effects[i],
-            "value" => length(e.data.groups[i]) == 1 ? e.x[e.data.groups[i][1]] : nothing
+            "value" => length(e.data.groups[i]) == 1 ? Float64(e.x[e.data.groups[i][1]]) : nothing
         ) for i in 1:length(e.data.groupNames)]
     ) for e in arr[clustOrder]]
 
