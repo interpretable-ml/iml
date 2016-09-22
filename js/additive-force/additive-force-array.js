@@ -213,7 +213,7 @@ export class AdditiveForceArray extends HTMLElement {
     this.hoverGroup1 = this.root.select('.additive-force-array-hoverGroup1');
     this.hoverGroup2 = this.root.select('.additive-force-array-hoverGroup2');
     this.redraw = debounce(() => this.draw(this.lastExplanation), 200);
-    this.baseValue = 0;
+    this.lastData = {baseValue: 0};
     this.topOffset = 28;
     this.leftOffset = 80;
     this.height = 250;
@@ -288,7 +288,7 @@ export class AdditiveForceArray extends HTMLElement {
     window.removeEventListener('resize', this.redraw);
   }
 
-  invLinkFunction(x) { return this.baseValue + x; }
+  invLinkFunction(x) { return this.lastData.baseValue + x; }
 
   mouseLeft(event) {
     this.hoverLine.attr("display", "none");
@@ -349,9 +349,11 @@ export class AdditiveForceArray extends HTMLElement {
           .attr("y", nearestExp.joinPointy)
           .text(this.tickFormat(this.invLinkFunction(nearestExp.joinPoint)));
 
+      let P = this.lastData.featureNames.length;
+
       let posFeatures = [];
       let lastPos, pos;
-      for (let i = 0; i < nearestExp.features.length; ++i) {
+      for (let i = 0; i < P; ++i) {
         let d = nearestExp.features[i];
         pos = 5+(d.posyTop + d.posyBottom)/2;
         if ((!lastPos || lastPos - pos >= 15) && (d.posyTop - d.posyBottom) >= 6) {
@@ -362,7 +364,7 @@ export class AdditiveForceArray extends HTMLElement {
 
       let negFeatures = [];
       lastPos = undefined;
-      for (let i = 0; i < nearestExp.features.length; ++i) {
+      for (let i = 0; i < P; ++i) {
         let d = nearestExp.features[i];
         pos = 5+(d.negyTop + d.negyBottom)/2;
         if ((!lastPos || lastPos - pos >= 15) && (d.negyTop - d.negyBottom) >= 6) {
@@ -371,7 +373,7 @@ export class AdditiveForceArray extends HTMLElement {
         }
       }
 
-      let labelFunc = d => nearestExp.count > 1 ? "mean("+d.name+") = "+this.tickFormat(d.value) : d.name+" = "+this.tickFormat(d.value);
+      let labelFunc = d => nearestExp.count > 1 ? "mean("+this.lastData.featureNames[d.ind]+") = "+this.tickFormat(d.value) : this.lastData.featureNames[d.ind]+" = "+this.tickFormat(d.value);
 
       let featureHoverLabels1 = this.hoverGroup1.selectAll(".pos-values").data(posFeatures);
       featureHoverLabels1.enter().append("text")
@@ -431,15 +433,13 @@ export class AdditiveForceArray extends HTMLElement {
     }
   }
 
-  draw(explanations) {
+  draw(data) {
+    if (data && data.explanations.length > 0) {
+      this.lastData = data;
+      for (let i = 0; i < data.explanations.length; ++i) data.explanations[i].simInd = i;
+      for (let i = 0; i < data.explanations.length; ++i) data.explanations[i].outValue = sum(map(data.explanations[i].features, x=>x.effect)) + data.baseValue;
 
-    if (explanations && explanations.length > 0) {
-      this.featureNames = map(explanations[0].features, x=>x.name);
-      this.lastExplanations = explanations;
-      for (let i = 0; i < explanations.length; ++i) explanations[i].simInd = i;
-      for (let i = 0; i < explanations.length; ++i) explanations[i].outValue = sum(map(explanations[i].features, x=>x.effect)) + explanations[i].baseValue;
-
-      let options = ["sample order by similarity", "sample order by output value"].concat(this.featureNames);
+      let options = ["sample order by similarity", "sample order by output value"].concat(data.featureNames);
       let xLabelOptions = this.xlabel.selectAll('option').data(options);
       xLabelOptions.enter().append("option")
         .merge(xLabelOptions)
@@ -447,8 +447,8 @@ export class AdditiveForceArray extends HTMLElement {
           .text(d => d);
       xLabelOptions.exit().remove();
 
-      let n = explanations[0].outNames[0] ? explanations[0].outNames[0] : "model output value";
-      options = map(this.featureNames, x=>[x, x+" effects"])
+      let n = data.outNames[0] ? data.outNames[0] : "model output value";
+      options = map(data.featureNames, x=>[x, x+" effects"])
       options.unshift(["model output value", n]);
       let yLabelOptions = this.ylabel.selectAll('option').data(options);
       yLabelOptions.enter().append("option")
@@ -466,27 +466,37 @@ export class AdditiveForceArray extends HTMLElement {
   }
 
   internalDraw() {
-    if (!this.lastExplanations) return;
+    if (!this.lastData) return;
+
+    let P = this.lastData.featureNames.length;
+
+    // we fill in any implicit feature values and assume they have a zero effect and value
+    for (let e of this.lastData.explanations) {
+      for (let i = 0; i < P; ++i) {
+        if (!e.features.hasOwnProperty(i)) {
+          e.features[i] = { effect: 0, value: 0 };
+        }
+        e.features[i].ind = i;
+      }
+    }
 
     let explanations;
     let xsort = this.xlabel.node().value;
-    //console.log("xsort", xsort)
     if (xsort === "sample order by similarity") {
-      explanations = sortBy(this.lastExplanations, x=>x.simInd);
+      explanations = sortBy(this.lastData.explanations, x=>x.simInd);
       map(explanations, (e,i)=>e.xmap = i);
     } else if (xsort === "sample order by output value") {
-      explanations = sortBy(this.lastExplanations, x=>-x.outValue);
+      explanations = sortBy(this.lastData.explanations, x=>-x.outValue);
       map(explanations, (e,i)=>e.xmap = i);
     } else {
-      let ind = findIndex(this.featureNames, x=>x===xsort);
-      //console.log("ind", ind, xsort)
-      map(this.lastExplanations, (e,i)=>e.xmap = e.features[ind].value);
-      let explanations2 = sortBy(this.lastExplanations, x=>x.xmap);
+      let ind = findIndex(this.lastData.featureNames, x=>x===xsort);
+      map(this.lastData.explanations, (e,i)=>e.xmap = e.features[ind].value);
+      let explanations2 = sortBy(this.lastData.explanations, x=>x.xmap);
       let xvals = map(explanations2, x=>x.xmap);
       let xmin = min(xvals);
       let xmax = max(xvals);
       let binSize = (xmax - xmin)/100;
-      //console.log("binSize", binSize)
+
       // Build explanations where effects are averaged when the x values are identical
       explanations = [];
       let laste, copye, e;
@@ -497,14 +507,14 @@ export class AdditiveForceArray extends HTMLElement {
             copye = cloneDeep(laste);
             copye.count = 1;
           }
-          for (let j = 0; j < copye.features.length; ++j) {
+          for (let j = 0; j < P; ++j) {
             copye.features[j].effect += e.features[j].effect;
             copye.features[j].value += e.features[j].value;
           }
           copye.count += 1;
         } else if (laste) {
           if (copye) {
-            for (let j = 0; j < copye.features.length; ++j) {
+            for (let j = 0; j < P; ++j) {
               copye.features[j].effect /= copye.count;
               copye.features[j].value /= copye.count;
             }
@@ -522,29 +532,26 @@ export class AdditiveForceArray extends HTMLElement {
     }
 
     // adjust for the correct y-value we are plotting
-    let filteredFeatureNames = this.featureNames;
+    let filteredFeatureNames = this.lastData.featureNames;
     let yvalue = this.ylabel.node().value;
     if (yvalue !== "model output value") {
       explanations = cloneDeep(explanations);
-      let ind = findIndex(this.featureNames, x=>x===yvalue);
+      let ind = findIndex(this.lastData.featureNames, x=>x===yvalue);
 
       for (let i = 0; i < explanations.length; ++i) {
         explanations[i].features = [explanations[i].features[ind]];
       }
-      filteredFeatureNames = [this.featureNames[ind]];
+      filteredFeatureNames = [this.lastData.featureNames[ind]];
     }
     this.currExplanations = explanations;
 
-    //console.log(map(explanations, xmap));
-
     // determine the link function
-    this.baseValue = explanations[0].baseValue; // assume all base values are the same
-    if (explanations[0].link === "identity") { // assume all links are the same
-      this.invLinkFunction = x => this.baseValue + x;
-    } else if (explanations[0].link === "logit") {
-      this.invLinkFunction = x => 1/(1+Math.exp(-(this.baseValue + x))); // logistic is inverse of logit
+    if (this.lastData.link === "identity") { // assume all links are the same
+      this.invLinkFunction = x => this.lastData.baseValue + x;
+    } else if (this.lastData.link === "logit") {
+      this.invLinkFunction = x => 1/(1+Math.exp(-(this.lastData.baseValue + x))); // logistic is inverse of logit
     } else {
-      console.log("ERROR: Unrecognized link function: ", explanations[0].link)
+      console.log("ERROR: Unrecognized link function: ", this.lastData.link)
     }
 
     this.predValues = map(explanations, e=>sum(map(e.features, x=>x.effect)));
@@ -555,14 +562,6 @@ export class AdditiveForceArray extends HTMLElement {
 
     this.svg.style('height', this.height);
 
-    //console.log("width", width)
-    //let totalEffect = sum(map(data, x=>Math.abs(x.effect)));
-    //let totalPosEffects = sum(map(filter(data, x=>x.effect>0), x=>x.effect)) || 0;
-    //let totalNegEffects = sum(map(filter(data, x=>x.effect<0), x=>-x.effect)) || 0;
-    //this.domainSize = Math.max(totalPosEffects, totalNegEffects)*3;
-
-
-    //let scaleOffset = width/2 - scale(totalNegEffects);
     let xvals = map(explanations, x=>x.xmap);
     this.xscale.domain([min(xvals), max(xvals)]).range([this.leftOffset,width]).clamp(true);
     this.xaxisElement.attr("transform", "translate(0,"+this.topOffset+")").call(this.xaxis);
@@ -571,31 +570,23 @@ export class AdditiveForceArray extends HTMLElement {
       this.currExplanations[i].xmapScaled = this.xscale(this.currExplanations[i].xmap);
     }
 
-    // for (let i = 0; i < explanations.length; ++i) {
-    //   this.drawSlice(explanations[i], 1, height, i);
-    // }
-
-    let P = explanations[0].features.length;
     let N = explanations.length;
     let domainSize = 0;
-
     for (let ind = 0; ind < N; ++ind) {
-      let data = explanations[ind].features;
-      if (data.length !== P) error("Explanations have differing numbers of features!");
-      let totalPosEffects = sum(map(filter(data, x=>x.effect>0), x=>x.effect)) || 0;
-      let totalNegEffects = sum(map(filter(data, x=>x.effect<0), x=>-x.effect)) || 0;
+      let data2 = explanations[ind].features;
+      //if (data2.length !== P) error("Explanations have differing numbers of features!");
+      let totalPosEffects = sum(map(filter(data2, x=>x.effect>0), x=>x.effect)) || 0;
+      let totalNegEffects = sum(map(filter(data2, x=>x.effect<0), x=>-x.effect)) || 0;
       domainSize = Math.max(domainSize, Math.max(totalPosEffects, totalNegEffects)*2.4);
     }
-    //console.log("domainSize", domainSize)
-    //console.log("this.baseValue", this.baseValue)
     this.yscale.domain([-domainSize/2,domainSize/2]).range([this.height-10, this.topOffset]);
     this.yaxisElement.attr("transform", "translate("+this.leftOffset+",0)").call(this.yaxis);
 
     for (let ind = 0; ind < N; ++ind) {
-      let data = explanations[ind].features;
+      let data2 = explanations[ind].features;
 
-      let totalEffect = sum(map(data, x=>Math.abs(x.effect)));
-      let totalNegEffects = sum(map(filter(data, x=>x.effect<0), x=>-x.effect)) || 0;
+      let totalEffect = sum(map(data2, x=>Math.abs(x.effect)));
+      let totalNegEffects = sum(map(filter(data2, x=>x.effect<0), x=>-x.effect)) || 0;
 
       //let scaleOffset = height/2 - this.yscale(totalNegEffects);
 
@@ -603,15 +594,25 @@ export class AdditiveForceArray extends HTMLElement {
       // and also the positions of each feature effect block
       let pos = -totalNegEffects, i;
       for (i=0; i < P; ++i) {
-        data[i].posyTop = this.yscale(pos);
-        if (data[i].effect > 0) pos += data[i].effect;
-        data[i].posyBottom = this.yscale(pos);
+        if (data2[i]) {
+          data2[i].posyTop = this.yscale(pos);
+          if (data2[i].effect > 0) pos += data2[i].effect;
+          data2[i].posyBottom = this.yscale(pos);
+          data2[i].ind = i;
+        } else { // fill in implicit zero valued features
+          data2[i] = {
+            posyTop: this.yscale(pos),
+            posyBottom: this.yscale(pos),
+            effect: 0,
+            ind: i
+          };
+        }
       }
       let joinPoint = pos;
       for (i=0; i < P; ++i) {
-        data[i].negyTop = this.yscale(pos);
-        if (data[i].effect < 0) pos -= data[i].effect;
-        data[i].negyBottom = this.yscale(pos);
+        data2[i].negyTop = this.yscale(pos);
+        if (data2[i].effect < 0) pos -= data2[i].effect;
+        data2[i].negyBottom = this.yscale(pos);
       }
       explanations[ind].joinPoint = joinPoint;
       explanations[ind].joinPointy = this.yscale(joinPoint);

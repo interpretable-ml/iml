@@ -245,7 +245,7 @@ export class AdditiveForce extends HTMLElement {
         .attr("class", "force-bar-labels")
         .attr("y", d => 48+this.topOffset)
       .merge(labels)
-        .text(d => d.value !== undefined && d.value != null ? d.name+" = "+d.value : d.name)
+        .text((d, i) => d.value !== undefined && d.value != null ? explanation.featureNames[i]+" = "+d.value : explanation.featureNames[i])
         .attr("fill", d=>d.effect > 0 ? this.colors[0] : this.colors[1])
         .attr("stroke", function(d, i) {
           d.textWidth = Math.max(this.getComputedTextLength(), scale(Math.abs(d.effect))-10);
