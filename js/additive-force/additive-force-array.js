@@ -353,10 +353,11 @@ export class AdditiveForceArray extends HTMLElement {
 
       let posFeatures = [];
       let lastPos, pos;
-      for (let i of this.currUsedFeatures) {
+      for (let j = this.currPosOrderedFeatures.length-1; j >= 0; --j) {
+        let i = this.currPosOrderedFeatures[j];
         let d = nearestExp.features[i];
         pos = 5+(d.posyTop + d.posyBottom)/2;
-        if ((!lastPos || lastPos - pos >= 15) && (d.posyTop - d.posyBottom) >= 6) {
+        if ((!lastPos || pos - lastPos >= 15) && (d.posyTop - d.posyBottom) >= 6) {
           posFeatures.push(d);
           lastPos = pos;
         }
@@ -364,7 +365,7 @@ export class AdditiveForceArray extends HTMLElement {
 
       let negFeatures = [];
       lastPos = undefined;
-      for (let i of this.currUsedFeatures) {
+      for (let i of this.currNegOrderedFeatures) {
         let d = nearestExp.features[i];
         pos = 5+(d.negyTop + d.negyBottom)/2;
         if ((!lastPos || lastPos - pos >= 15) && (d.negyTop - d.negyBottom) >= 6) {
@@ -448,19 +449,37 @@ export class AdditiveForceArray extends HTMLElement {
       for (let i = 0; i < data.explanations.length; ++i) data.explanations[i].outValue = sum(map(data.explanations[i].features, x=>x.effect)) + data.baseValue;
 
       // Find what features are actually used
-      let allDefinedFeatures = {};
+      let posDefinedFeatures = {};
+      let negDefinedFeatures = {};
+      let definedFeaturesValues = {};
       for (let e of this.lastData.explanations) {
         for (let k in e.features) {
-          if (allDefinedFeatures[k] === undefined) allDefinedFeatures[k] = Math.abs(e.features[k].effect);
-          else allDefinedFeatures[k] += Math.abs(e.features[k].effect);
+          if (posDefinedFeatures[k] === undefined) {
+            posDefinedFeatures[k] = 0;
+            negDefinedFeatures[k] = 0;
+            definedFeaturesValues[k] = 0;
+          }
+          if (e.features[k].effect > 0) {
+            posDefinedFeatures[k] += e.features[k].effect;
+          } else {
+            negDefinedFeatures[k] -= e.features[k].effect;
+          }
+          if (e.features[k].value !== null && e.features[k].value !== undefined) {
+            definedFeaturesValues[k] += 1;
+          }
         }
       }
-      this.usedFeatures = keys(allDefinedFeatures);
+      this.usedFeatures = sortBy(keys(posDefinedFeatures), i=>-(posDefinedFeatures[i]+negDefinedFeatures[i]));
       console.log("found ",this.usedFeatures.length," used features");
 
-      let orderedFeatures = sortBy(this.usedFeatures, i=>-allDefinedFeatures[i]);
+      this.posOrderedFeatures = sortBy(this.usedFeatures, i=>posDefinedFeatures[i]);
+      this.negOrderedFeatures = sortBy(this.usedFeatures, i=>-negDefinedFeatures[i]);
+      this.singleValueFeatures = filter(this.usedFeatures, i => definedFeaturesValues[i] > 0);
 
-      let options = ["sample order by similarity", "sample order by output value"].concat(orderedFeatures.map(i=>data.featureNames[i]));
+      let options = [
+        "sample order by similarity",
+        "sample order by output value"
+      ].concat(this.singleValueFeatures.map(i=>data.featureNames[i]));
       let xLabelOptions = this.xlabel.selectAll('option').data(options);
       xLabelOptions.enter().append("option")
         .merge(xLabelOptions)
@@ -469,7 +488,7 @@ export class AdditiveForceArray extends HTMLElement {
       xLabelOptions.exit().remove();
 
       let n = data.outNames[0] ? data.outNames[0] : "model output value";
-      options = map(orderedFeatures, i=>[data.featureNames[i], data.featureNames[i]+" effects"])
+      options = map(this.singleValueFeatures, i=>[data.featureNames[i], data.featureNames[i]+" effects"])
       options.unshift(["model output value", n]);
       let yLabelOptions = this.ylabel.selectAll('option').data(options);
       yLabelOptions.enter().append("option")
@@ -509,7 +528,7 @@ export class AdditiveForceArray extends HTMLElement {
       map(explanations, (e,i)=>e.xmap = i);
     } else {
       let ind = findIndex(this.lastData.featureNames, x=>x===xsort);
-      map(this.lastData.explanations, (e,i)=>e.xmap = e.features[ind].value);
+      map(this.lastData.explanations, (e,i)=> e.xmap = e.features[ind].value);
       let explanations2 = sortBy(this.lastData.explanations, x=>x.xmap);
       let xvals = map(explanations2, x=>x.xmap);
       let xmin = min(xvals);
@@ -520,6 +539,7 @@ export class AdditiveForceArray extends HTMLElement {
       explanations = [];
       let laste, copye, e;
       for (let i = 0; i < explanations2.length; ++i) {
+
         let e = explanations2[i];
         if (laste && (!copye && e.xmap - laste.xmap <= binSize) || (copye && e.xmap - copye.xmap <= binSize)) {
           if (!copye) {
@@ -552,6 +572,8 @@ export class AdditiveForceArray extends HTMLElement {
 
     // adjust for the correct y-value we are plotting
     this.currUsedFeatures = this.usedFeatures;
+    this.currPosOrderedFeatures = this.posOrderedFeatures;
+    this.currNegOrderedFeatures = this.negOrderedFeatures;
     //let filteredFeatureNames = this.lastData.featureNames;
     let yvalue = this.ylabel.node().value;
     if (yvalue !== "model output value") {
@@ -565,6 +587,8 @@ export class AdditiveForceArray extends HTMLElement {
       }
       //filteredFeatureNames = [this.lastData.featureNames[ind]];
       this.currUsedFeatures = [ind];
+      this.currPosOrderedFeatures = [ind];
+      this.currNegOrderedFeatures = [ind];
     }
     this.currExplanations = explanations;
 
@@ -617,14 +641,14 @@ export class AdditiveForceArray extends HTMLElement {
       // calculate the position of the join point between positive and negative effects
       // and also the positions of each feature effect block
       let pos = -totalNegEffects, i;
-      for (i of this.currUsedFeatures) {
+      for (i of this.currPosOrderedFeatures) {
         data2[i].posyTop = this.yscale(pos);
         if (data2[i].effect > 0) pos += data2[i].effect;
         data2[i].posyBottom = this.yscale(pos);
         data2[i].ind = i;
       }
       let joinPoint = pos;
-      for (i of this.currUsedFeatures) {
+      for (i of this.currNegOrderedFeatures) {
         data2[i].negyTop = this.yscale(pos);
         if (data2[i].effect < 0) pos -= data2[i].effect;
         data2[i].negyBottom = this.yscale(pos);
