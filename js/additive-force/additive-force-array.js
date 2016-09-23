@@ -216,7 +216,7 @@ export class AdditiveForceArray extends HTMLElement {
     this.lastData = {baseValue: 0};
     this.topOffset = 28;
     this.leftOffset = 80;
-    this.height = 250;
+    this.height = 350;
     this.tickFormat = format(",.4");
 
     this.colors.map((c,i) => {
@@ -373,7 +373,15 @@ export class AdditiveForceArray extends HTMLElement {
         }
       }
 
-      let labelFunc = d => nearestExp.count > 1 ? "mean("+this.lastData.featureNames[d.ind]+") = "+this.tickFormat(d.value) : this.lastData.featureNames[d.ind]+" = "+this.tickFormat(d.value);
+      let labelFunc = d => {
+        let valString = "";
+        if (d.value !== null && d.value !== undefined) valString = " = "+this.tickFormat(d.value);
+        if (nearestExp.count > 1) {
+          return "mean("+this.lastData.featureNames[d.ind]+")"+valString ;
+        } else {
+          return this.lastData.featureNames[d.ind]+valString;
+        }
+      };
 
       let featureHoverLabels1 = this.hoverGroup1.selectAll(".pos-values").data(posFeatures);
       featureHoverLabels1.enter().append("text")
@@ -592,7 +600,7 @@ export class AdditiveForceArray extends HTMLElement {
       //if (data2.length !== P) error("Explanations have differing numbers of features!");
       let totalPosEffects = sum(map(filter(data2, x=>x.effect>0), x=>x.effect)) || 0;
       let totalNegEffects = sum(map(filter(data2, x=>x.effect<0), x=>-x.effect)) || 0;
-      domainSize = Math.max(domainSize, Math.max(totalPosEffects, totalNegEffects)*2.4);
+      domainSize = Math.max(domainSize, Math.max(totalPosEffects, totalNegEffects)*2.2);
     }
     this.yscale.domain([-domainSize/2,domainSize/2]).range([this.height-10, this.topOffset]);
     this.yaxisElement.attr("transform", "translate("+this.leftOffset+",0)").call(this.yaxis);
