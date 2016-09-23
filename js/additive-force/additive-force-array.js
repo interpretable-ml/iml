@@ -5,7 +5,7 @@ import {format} from 'd3-format';
 import {axisBottom, axisLeft} from 'd3-axis';
 import {line} from 'd3-shape';
 import {rgb,hsl,lab} from 'd3-color';
-import {cloneDeep, min, max, sortBy, sum, map, filter, debounce, findIndex, range, rangeRight, shuffle} from 'lodash';
+import {cloneDeep, min, max, sortBy, sum, map, filter, debounce, findIndex, range, rangeRight, shuffle, keys} from 'lodash';
 
 export class AdditiveForceArray extends HTMLElement {
   constructor() {
@@ -94,15 +94,15 @@ export class AdditiveForceArray extends HTMLElement {
   }
   .additive-force-array-xlabel {
     background: none;
-    border: none;
+    border: 1px solid #ccc;
     opacity: 0.5;
     margin-bottom: 0px;
     font-size: 12px;
     font-family: arial;
     margin-left: 80px;
+    max-width: 300px;
   }
   .additive-force-array-xlabel:focus {
-    border: none;
     outline: none;
   }
   .additive-force-array-ylabel {
@@ -111,14 +111,14 @@ export class AdditiveForceArray extends HTMLElement {
     left: 0px;
     transform: rotate(-90deg);
     background: none;
-    border: none;
+    border: 1px solid #ccc;
     opacity: 0.5;
     margin-bottom: 0px;
     font-size: 12px;
     font-family: arial;
+    max-width: 150px;
   }
   .additive-force-array-ylabel:focus {
-    border: none;
     outline: none;
   }
   .additive-force-array-hoverLine {
@@ -353,7 +353,7 @@ export class AdditiveForceArray extends HTMLElement {
 
       let posFeatures = [];
       let lastPos, pos;
-      for (let i = 0; i < P; ++i) {
+      for (let i of this.currUsedFeatures) {
         let d = nearestExp.features[i];
         pos = 5+(d.posyTop + d.posyBottom)/2;
         if ((!lastPos || lastPos - pos >= 15) && (d.posyTop - d.posyBottom) >= 6) {
@@ -364,7 +364,7 @@ export class AdditiveForceArray extends HTMLElement {
 
       let negFeatures = [];
       lastPos = undefined;
-      for (let i = 0; i < P; ++i) {
+      for (let i of this.currUsedFeatures) {
         let d = nearestExp.features[i];
         pos = 5+(d.negyTop + d.negyBottom)/2;
         if ((!lastPos || lastPos - pos >= 15) && (d.negyTop - d.negyBottom) >= 6) {
@@ -439,7 +439,20 @@ export class AdditiveForceArray extends HTMLElement {
       for (let i = 0; i < data.explanations.length; ++i) data.explanations[i].simInd = i;
       for (let i = 0; i < data.explanations.length; ++i) data.explanations[i].outValue = sum(map(data.explanations[i].features, x=>x.effect)) + data.baseValue;
 
-      let options = ["sample order by similarity", "sample order by output value"].concat(data.featureNames);
+      // Find what features are actually used
+      let allDefinedFeatures = {};
+      for (let e of this.lastData.explanations) {
+        for (let k in e.features) {
+          if (allDefinedFeatures[k] === undefined) allDefinedFeatures[k] = Math.abs(e.features[k].effect);
+          else allDefinedFeatures[k] += Math.abs(e.features[k].effect);
+        }
+      }
+      this.usedFeatures = keys(allDefinedFeatures);
+      console.log("found ",this.usedFeatures.length," used features");
+
+      let orderedFeatures = sortBy(this.usedFeatures, i=>-allDefinedFeatures[i]);
+
+      let options = ["sample order by similarity", "sample order by output value"].concat(orderedFeatures.map(i=>data.featureNames[i]));
       let xLabelOptions = this.xlabel.selectAll('option').data(options);
       xLabelOptions.enter().append("option")
         .merge(xLabelOptions)
@@ -448,7 +461,7 @@ export class AdditiveForceArray extends HTMLElement {
       xLabelOptions.exit().remove();
 
       let n = data.outNames[0] ? data.outNames[0] : "model output value";
-      options = map(data.featureNames, x=>[x, x+" effects"])
+      options = map(orderedFeatures, i=>[data.featureNames[i], data.featureNames[i]+" effects"])
       options.unshift(["model output value", n]);
       let yLabelOptions = this.ylabel.selectAll('option').data(options);
       yLabelOptions.enter().append("option")
@@ -459,7 +472,7 @@ export class AdditiveForceArray extends HTMLElement {
 
       this.ylabel
           .style("top", ((this.height-10 - this.topOffset)/2 + this.topOffset) + "px")
-          .style("left", (20-this.ylabel.node().offsetWidth/2)+"px")
+          .style("left", (10-this.ylabel.node().offsetWidth/2)+"px")
 
       this.internalDraw();
     }
@@ -468,11 +481,9 @@ export class AdditiveForceArray extends HTMLElement {
   internalDraw() {
     if (!this.lastData) return;
 
-    let P = this.lastData.featureNames.length;
-
     // we fill in any implicit feature values and assume they have a zero effect and value
     for (let e of this.lastData.explanations) {
-      for (let i = 0; i < P; ++i) {
+      for (let i of this.usedFeatures) {
         if (!e.features.hasOwnProperty(i)) {
           e.features[i] = { effect: 0, value: 0 };
         }
@@ -507,14 +518,14 @@ export class AdditiveForceArray extends HTMLElement {
             copye = cloneDeep(laste);
             copye.count = 1;
           }
-          for (let j = 0; j < P; ++j) {
+          for (let j of this.usedFeatures) {
             copye.features[j].effect += e.features[j].effect;
             copye.features[j].value += e.features[j].value;
           }
           copye.count += 1;
         } else if (laste) {
           if (copye) {
-            for (let j = 0; j < P; ++j) {
+            for (let j of this.usedFeatures) {
               copye.features[j].effect /= copye.count;
               copye.features[j].value /= copye.count;
             }
@@ -532,16 +543,20 @@ export class AdditiveForceArray extends HTMLElement {
     }
 
     // adjust for the correct y-value we are plotting
-    let filteredFeatureNames = this.lastData.featureNames;
+    this.currUsedFeatures = this.usedFeatures;
+    //let filteredFeatureNames = this.lastData.featureNames;
     let yvalue = this.ylabel.node().value;
     if (yvalue !== "model output value") {
       explanations = cloneDeep(explanations);
       let ind = findIndex(this.lastData.featureNames, x=>x===yvalue);
 
       for (let i = 0; i < explanations.length; ++i) {
-        explanations[i].features = [explanations[i].features[ind]];
+        let v = explanations[i].features[ind];
+        explanations[i].features = {};
+        explanations[i].features[ind] = v;
       }
-      filteredFeatureNames = [this.lastData.featureNames[ind]];
+      //filteredFeatureNames = [this.lastData.featureNames[ind]];
+      this.currUsedFeatures = [ind];
     }
     this.currExplanations = explanations;
 
@@ -584,6 +599,7 @@ export class AdditiveForceArray extends HTMLElement {
 
     for (let ind = 0; ind < N; ++ind) {
       let data2 = explanations[ind].features;
+      //console.log(length(data2))
 
       let totalEffect = sum(map(data2, x=>Math.abs(x.effect)));
       let totalNegEffects = sum(map(filter(data2, x=>x.effect<0), x=>-x.effect)) || 0;
@@ -593,23 +609,14 @@ export class AdditiveForceArray extends HTMLElement {
       // calculate the position of the join point between positive and negative effects
       // and also the positions of each feature effect block
       let pos = -totalNegEffects, i;
-      for (i=0; i < P; ++i) {
-        if (data2[i]) {
-          data2[i].posyTop = this.yscale(pos);
-          if (data2[i].effect > 0) pos += data2[i].effect;
-          data2[i].posyBottom = this.yscale(pos);
-          data2[i].ind = i;
-        } else { // fill in implicit zero valued features
-          data2[i] = {
-            posyTop: this.yscale(pos),
-            posyBottom: this.yscale(pos),
-            effect: 0,
-            ind: i
-          };
-        }
+      for (i of this.currUsedFeatures) {
+        data2[i].posyTop = this.yscale(pos);
+        if (data2[i].effect > 0) pos += data2[i].effect;
+        data2[i].posyBottom = this.yscale(pos);
+        data2[i].ind = i;
       }
       let joinPoint = pos;
-      for (i=0; i < P; ++i) {
+      for (i of this.currUsedFeatures) {
         data2[i].negyTop = this.yscale(pos);
         if (data2[i].effect < 0) pos -= data2[i].effect;
         data2[i].negyBottom = this.yscale(pos);
@@ -622,7 +629,7 @@ export class AdditiveForceArray extends HTMLElement {
       .x(d => d[0])
       .y(d => d[1]);
 
-    let areasPos = this.group.selectAll(".force-bar-array-area-pos").data(range(P));
+    let areasPos = this.group.selectAll(".force-bar-array-area-pos").data(this.currUsedFeatures);
     areasPos.enter().append("path")
         .attr("class", "force-bar-array-area-pos")
       .merge(areasPos)
@@ -634,7 +641,7 @@ export class AdditiveForceArray extends HTMLElement {
         .attr("fill", this.colors[0]);
     areasPos.exit().remove();
 
-    let areasNeg = this.group.selectAll(".force-bar-array-area-neg").data(range(P));
+    let areasNeg = this.group.selectAll(".force-bar-array-area-neg").data(this.currUsedFeatures);
     areasNeg.enter().append("path")
         .attr("class", "force-bar-array-area-neg")
       .merge(areasNeg)
@@ -646,7 +653,7 @@ export class AdditiveForceArray extends HTMLElement {
         .attr("fill", this.colors[1]);
     areasNeg.exit().remove();
 
-    let dividersPos = this.group.selectAll(".force-bar-array-divider-pos").data(range(P));
+    let dividersPos = this.group.selectAll(".force-bar-array-divider-pos").data(this.currUsedFeatures);
     dividersPos.enter().append("path")
         .attr("class", "force-bar-array-divider-pos")
       .merge(dividersPos)
@@ -659,7 +666,7 @@ export class AdditiveForceArray extends HTMLElement {
         .attr("stroke", d => this.colors[0].brighter(1.2));
     dividersPos.exit().remove();
 
-    let dividersNeg = this.group.selectAll(".force-bar-array-divider-neg").data(range(P));
+    let dividersNeg = this.group.selectAll(".force-bar-array-divider-neg").data(this.currUsedFeatures);
     dividersNeg.enter().append("path")
         .attr("class", "force-bar-array-divider-neg")
       .merge(dividersNeg)
@@ -703,7 +710,7 @@ export class AdditiveForceArray extends HTMLElement {
     // find areas on the plot big enough for feature labels
     let featureLabels = [];
     for (let featType of ["pos", "neg"]) {
-      for (let ind = 0; ind < P; ++ind) {
+      for (let ind of this.currUsedFeatures) {
         let starti = 0, endi = 0, i, boxWidth = 0, hbounds = {top: 0, bottom: 0};
         let newHbounds;
         while (endi < N-1) {
@@ -739,7 +746,7 @@ export class AdditiveForceArray extends HTMLElement {
             boxWidth = explanations[endi].xmapScaled - explanations[starti].xmapScaled;
             //console.log("found  ",boxWidth,hbounds)
 
-            featureLabels.push([(explanations[endi].xmapScaled + explanations[starti].xmapScaled)/2, (hbounds.top+hbounds.bottom)/2, filteredFeatureNames[ind]]);
+            featureLabels.push([(explanations[endi].xmapScaled + explanations[starti].xmapScaled)/2, (hbounds.top+hbounds.bottom)/2, this.lastData.featureNames[ind]]);
 
             let lastEnd = explanations[endi].xmapScaled;
             starti = endi;
