@@ -488,7 +488,7 @@ export class AdditiveForceArray extends HTMLElement {
       xLabelOptions.exit().remove();
 
       let n = data.outNames[0] ? data.outNames[0] : "model output value";
-      options = map(this.singleValueFeatures, i=>[data.featureNames[i], data.featureNames[i]+" effects"])
+      options = map(this.usedFeatures, i=>[data.featureNames[i], data.featureNames[i]+" effects"])
       options.unshift(["model output value", n]);
       let yLabelOptions = this.ylabel.selectAll('option').data(options);
       yLabelOptions.enter().append("option")

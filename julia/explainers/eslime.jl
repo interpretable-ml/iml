@@ -1,12 +1,12 @@
-import ShapleyValues
+import ESValues
 
 type ESLimeExplainer <: Explainer
     link::Link
     nsamples
 end
-ESLimeExplainer() = ESLimeExplainer(IdentityLink(), nothing)
-ESLimeExplainer(link::Link) = ESLimeExplainer(link, nothing)
-ESLimeExplainer(link::Symbol) = ESLimeExplainer(convert(Link, link), nothing)
+ESLimeExplainer() = ESLimeExplainer(IdentityLink(), 0)
+ESLimeExplainer(link::Link) = ESLimeExplainer(link, 0)
+ESLimeExplainer(link::Symbol) = ESLimeExplainer(convert(Link, link), 0)
 
 function explain(x, model::Model, data::Data, e::ESLimeExplainer)
 
@@ -22,7 +22,7 @@ function explain(x, model::Model, data::Data, e::ESLimeExplainer)
         error("Provided model function fails when applied to the provided data instance x: ", e)
     end
 
-    baseValue,effects,effectsVar = ShapleyValues.shapleyvalues(
+    baseValue,effects,effectsVar = ESValues.esvalues(
         data.transposed ? x : x',
         data.transposed ? model.f : x->model.f(x'),
         data.transposed ? data.data : data.data',
@@ -31,7 +31,7 @@ function explain(x, model::Model, data::Data, e::ESLimeExplainer)
         weights=data.weights,
         nsamples=e.nsamples
     )
-    Explanation(e.link.f(baseValue), effects, effectsVar, x, e.link, model, data)
+    Explanation(baseValue, effects, effectsVar, x, e.link, model, data)
 end
 
 function explain(model::Model, data::Data, e::ESLimeExplainer)
