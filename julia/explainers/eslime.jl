@@ -31,7 +31,7 @@ function explain(x, model::Model, data::Data, e::ESLimeExplainer)
         weights=data.weights,
         nsamples=e.nsamples
     )
-    Explanation(baseValue, effects, effectsVar, x, e.link, model, data)
+    Explanation(e.link.f(baseValue), effects, effectsVar, x, e.link, model, data)
 end
 
 function explain(model::Model, data::Data, e::ESLimeExplainer)
