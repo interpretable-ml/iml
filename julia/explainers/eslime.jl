@@ -8,7 +8,7 @@ ESLimeExplainer() = ESLimeExplainer(IdentityLink(), 0)
 ESLimeExplainer(link::Link) = ESLimeExplainer(link, 0)
 ESLimeExplainer(link::Symbol) = ESLimeExplainer(convert(Link, link), 0)
 
-function explain(x, model::Model, data::Data, e::ESLimeExplainer)
+function explain(instance::Instance, model::Model, data::Data, e::ESLimeExplainer)
 
     # make sure the functions we got from the user actually work
     try
@@ -17,13 +17,13 @@ function explain(x, model::Model, data::Data, e::ESLimeExplainer)
         error("Provided model function fails when applied to the provided data set: ", e)
     end
     try
-        length(model.f(x)) == 1 || throw(Exception("Length of model.f(x) should be 1"))
+        length(model.f(instance.x)) == 1 || throw(Exception("Length of model.f(x) should be 1"))
     catch e
         error("Provided model function fails when applied to the provided data instance x: ", e)
     end
 
     baseValue,effects,effectsVar = ESValues.esvalues(
-        data.transposed ? x : x',
+        data.transposed ? instance.x : instance.x',
         data.transposed ? model.f : x->model.f(x'),
         data.transposed ? data.data : data.data',
         e.link.f;
@@ -31,7 +31,7 @@ function explain(x, model::Model, data::Data, e::ESLimeExplainer)
         weights=data.weights,
         nsamples=e.nsamples
     )
-    Explanation(e.link.f(baseValue), effects, effectsVar, x, e.link, model, data)
+    Explanation(e.link.f(baseValue), effects, effectsVar, instance, e.link, model, data)
 end
 
 function explain(model::Model, data::Data, e::ESLimeExplainer)

@@ -376,7 +376,9 @@ export class AdditiveForceArray extends HTMLElement {
 
       let labelFunc = d => {
         let valString = "";
-        if (d.value !== null && d.value !== undefined) valString = " = "+this.tickFormat(d.value);
+        if (d.value !== null && d.value !== undefined) {
+          valString = " = "+(isNaN(d.value) ? d.value : this.tickFormat(d.value));
+        }
         if (nearestExp.count > 1) {
           return "mean("+this.lastData.featureNames[d.ind]+")"+valString ;
         } else {
