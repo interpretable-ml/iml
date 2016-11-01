@@ -71,9 +71,9 @@ include("explainers/eslime.jl")
 
 # load the visualizers and dump our JS code to the notebook (if present)
 include("visualizers.jl")
-bundlePath = joinpath(dirname(@__FILE__), "..", "js", "bundle.js")
+bundlePath = joinpath(dirname(@__FILE__), "..", "javascript", "bundle.js")
 function __init__()
-    isdefined(:IJulia) && display(HTML("<script>$(readstring(bundlePath))</script>"))
+    isdefined(:IJulia) && display(HTML("<div style='background: #bbb; color: #fff; font-size: 10px;'>IML visualizer code loaded.</div><script>$(readstring(bundlePath))</script>"))
 end
 
 explain(instance, model, data) = explain(instance, model, data, ESLimeExplainer())
