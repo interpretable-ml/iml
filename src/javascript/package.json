@@ -4,22 +4,27 @@
   "description": "Web based visualizations of iML explanations.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack-dev-server --content-base build/",
+    "build": "webpack"
   },
-  "author": "Scott Lundberg",
+  "author": "(Add Marco once we merge) Scott Lundberg",
+  "repository": "https://github.com/interpretable-ml/iml",
   "license": "MIT",
   "dependencies": {
-    "@webcomponents/custom-elements": "^1.0.0-alpha",
     "d3": "^4",
-    "document-register-element": "^1",
     "lodash": "^4",
-    "webcomponents.js": "^0"
+    "material-ui": "^0.16.1",
+    "react": "^15.3.2",
+    "react-dom": "^15.3.2",
+    "react-tap-event-plugin": "^1.0.0"
   },
   "devDependencies": {
-    "babel-core": "^6",
-    "babel-loader": "^6",
-    "babel-preset-es2015": "^6",
-    "webpack": "^1",
-    "webpack-dev-server": "^1"
+    "babel-core": "^6.18.0",
+    "babel-loader": "^6.2.7",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-react": "^6.16.0",
+    "webpack": "^1.13.3",
+    "webpack-dev-server": "^1.16.2"
   }
 }

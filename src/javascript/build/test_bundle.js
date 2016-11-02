@@ -47,7 +47,7 @@
 
 	'use strict';
 
-	var _randomExplanation = __webpack_require__(19);
+	var _randomExplanation = __webpack_require__(324);
 
 	var _randomExplanation2 = _interopRequireDefault(_randomExplanation);
 
@@ -58,7 +58,56 @@
 
 /***/ },
 
-/***/ 12:
+/***/ 271:
+/***/ function(module, exports) {
+
+	module.exports = function(module) {
+		if(!module.webpackPolyfill) {
+			module.deprecate = function() {};
+			module.paths = [];
+			// module.parent = undefined by default
+			module.children = [];
+			module.webpackPolyfill = 1;
+		}
+		return module;
+	}
+
+
+/***/ },
+
+/***/ 324:
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	exports.default = function () {
+	  return {
+	    outNames: ["Probability of flower"],
+	    baseValue: 0.2,
+	    link: "identity",
+	    features: [{ name: "F1", effect: 0.0, value: 1 }, { name: "F2", effect: -0.6, value: 1 }, { name: "F3", effect: -0.2, value: 2 }, { name: "F4", effect: 0, value: 0 }]
+	    // range(20).map(i => ({
+	    //   name: 'value_'+i,
+	    //   effect: random()-0.5
+	    // }))
+	  };
+	};
+
+	var _lodash = __webpack_require__(325);
+
+	var seed = 1;
+	function random() {
+	  var x = Math.sin(seed++) * 10000;
+	  return x - Math.floor(x);
+	}
+
+/***/ },
+
+/***/ 325:
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global, module) {/**
@@ -17044,56 +17093,7 @@
 	  }
 	}.call(this));
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(13)(module)))
-
-/***/ },
-
-/***/ 13:
-/***/ function(module, exports) {
-
-	module.exports = function(module) {
-		if(!module.webpackPolyfill) {
-			module.deprecate = function() {};
-			module.paths = [];
-			// module.parent = undefined by default
-			module.children = [];
-			module.webpackPolyfill = 1;
-		}
-		return module;
-	}
-
-
-/***/ },
-
-/***/ 19:
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	exports.default = function () {
-	  return {
-	    outNames: ["Probability of flower"],
-	    baseValue: 0.2,
-	    link: "identity",
-	    features: [{ name: "F1", effect: 0.0, value: 1 }, { name: "F2", effect: -0.6, value: 1 }, { name: "F3", effect: -0.2, value: 2 }, { name: "F4", effect: 0, value: 0 }]
-	    // range(20).map(i => ({
-	    //   name: 'value_'+i,
-	    //   effect: random()-0.5
-	    // }))
-	  };
-	};
-
-	var _lodash = __webpack_require__(12);
-
-	var seed = 1;
-	function random() {
-	  var x = Math.sin(seed++) * 10000;
-	  return x - Math.floor(x);
-	}
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(271)(module)))
 
 /***/ }
 

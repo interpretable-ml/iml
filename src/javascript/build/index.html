@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test</title>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="bundle.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      IML.ReactDom.render(
+        IML.React.createElement(IML.SimpleListVisualizer, {
+          baseValue: 0.0,
+          link: 'identity',
+          featureNames: ["Blue", "Red", "Green"],
+          outNames: ["color rating"],
+          features: [
+            { value: 1.0, effect: 1.0 },
+            { value: 0.0, effect: 0.5 },
+            { value: 2.0, effect: -2.5 }
+          ]
+        }),
+        document.getElementById('app')
+      );
+    </script>
+  </body>
+</html>

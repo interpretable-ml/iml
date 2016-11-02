@@ -15,9 +15,25 @@ function visualize(e::Explanation, v::SimpleListVisualizer)
         "outNames" => e.model.outNames,
         "baseValue" => e.baseValue,
         "link" => convert(String, e.link),
-        "features" => [Dict("name" => e.data.groupNames[i], "effect" => e.effects[i]) for i in 1:length(e.data.groupNames)]
+        "featureNames" => e.data.groupNames,
+        "features" => Dict(i-1 => Dict(
+            "effect" => e.effects[i],
+            "value" => e.instance.groupDisplayValues[i]
+        ) for i in filter(j->e.effects[j] != 0, 1:length(e.data.groupNames)))
     )
-    HTML("<simple-list explanation='$(json(data))'>$errMsg</simple-list>")
+    id = randstring(len=20)
+
+    return HTML(
+""""
+<div id='$id'>$errMsg</div>
+ <script>
+   IML.ReactDom.render(
+    IML.React.createElement(IML.SimpleListVisualizer, $(json(data))),
+    document.getElementById('$id')
+  );
+</script>
+"""
+    )
 end
 
 type AdditiveForceVisualizer
