@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://interpretable-ml.github.io/images/diagramSmall.png" />
+  <img src="https://interpretable-ml.github.io/images/LogoIntegrated.png" />
 </p>
 
 ---
