@@ -1,22 +1,22 @@
 import ESValues
 
-type ESValuesExplainer <: Explainer
+type ESExplainer <: Explainer
     model::Model
     data::Data
     link::Link
     nsamples::Int64
     explain::Function
 end
-ESValuesExplainer(model, data) = ESValuesExplainer(model, data, IdentityLink())
-ESValuesExplainer(model, data, link) = ESValuesExplainer(model, data, link, 0)
-function ESValuesExplainer(model, data, link, nsamples)
-    e = ESValuesExplainer(convert(Model, model), convert(Data, data), convert(Link, link), nsamples, x->x)
+ESExplainer(model, data) = ESExplainer(model, data, IdentityLink())
+ESExplainer(model, data, link) = ESExplainer(model, data, link, 0)
+function ESExplainer(model, data, link, nsamples)
+    e = ESExplainer(convert(Model, model), convert(Data, data), convert(Link, link), nsamples, x->x)
     match_data!(e.model, e.data)
     e.explain = x->explain(convert(Instance, x), e)
     e
 end
 
-function explain(instance::Instance, e::ESValuesExplainer)
+function explain(instance::Instance, e::ESExplainer)
     local fx
 
     # make sure the instance is compatible with the background data
@@ -47,10 +47,10 @@ function explain(instance::Instance, e::ESValuesExplainer)
     AdditiveExplanation(e.link.f(baseValue), fx, effects, effectsVar, instance, e.link, e.model, e.data)
 end
 
-# function explain(model::Model, data::Data, e::ESValuesExplainer)
+# function explain(model::Model, data::Data, e::ESExplainer)
 #     if data.transposed
-#         return Explanation[explain(data.data[:,[i]], model::Model, data::Data, e::ESValuesExplainer) for i in 1:size(data.data)[2]]
+#         return Explanation[explain(data.data[:,[i]], model::Model, data::Data, e::ESExplainer) for i in 1:size(data.data)[2]]
 #     else
-#         return Explanation[explain(data.data[[i],:], model::Model, data::Data, e::ESValuesExplainer) for i in 1:size(data.data)[1]]
+#         return Explanation[explain(data.data[[i],:], model::Model, data::Data, e::ESExplainer) for i in 1:size(data.data)[1]]
 #     end
 # end

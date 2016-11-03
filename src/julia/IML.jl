@@ -3,7 +3,7 @@ module IML
 export
     visualize,
     RandomExplainer,
-    ESValuesExplainer
+    ESExplainer
 
 include("datatypes.jl")
 include("common.jl")
@@ -12,7 +12,7 @@ include("explanations.jl")
 
 abstract Explainer
 #include("explainers/random.jl")
-include("explainers/esvalues.jl")
+include("explainers/es.jl")
 
 include("visualizers.jl")
 

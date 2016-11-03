@@ -5,4 +5,4 @@ x = randn(1,10)
 f = x->sum(x,2)
 f(X)
 
-e = ESValuesExplainer(f, X).explain(x)
+e = ESExplainer(f, X).explain(x)
