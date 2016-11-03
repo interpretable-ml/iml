@@ -1,3 +1,6 @@
+import DataFrames
+import Base: convert
+
 abstract Data
 
 type DenseData <: Data
@@ -18,4 +21,5 @@ function DenseData(groupNames::Array{String}, data::Matrix)
     @assert l == size(data)[2] || transposed "# of names must match data matrix!"
     DenseData(groupNames, data, transposed, ones(numSamples), [[i] for i in 1:l])
 end
-DenseData(data::DataFrames.DataFrame) = DenseData(string.(names(data)), convert(Array, data))
+convert(::Type{Data}, data::DataFrames.DataFrame) = DenseData(string.(names(data)), convert(Array, data))
+convert(::Type{Data}, data::Matrix) = DenseData([string(i) for i in 1:size(data)[2]], data)

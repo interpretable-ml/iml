@@ -1,252 +1,77 @@
-import {select, mouse} from 'd3-selection';
+import React from 'react';
+import {select,selectAll,mouse} from 'd3-selection';
 import {scaleLinear} from 'd3-scale';
 import {extent} from 'd3-array';
 import {format} from 'd3-format';
 import {axisBottom, axisLeft} from 'd3-axis';
 import {line} from 'd3-shape';
-import {rgb,hsl,lab} from 'd3-color';
-import {cloneDeep, min, max, sortBy, sum, map, filter, debounce, findIndex, range, rangeRight, shuffle, keys} from 'lodash';
+import {hsl} from 'd3-color';
+import {sortBy, min, max, copy, map, each, sum, filter, debounce, keys, range, rangeRight, cloneDeep, findKey} from 'lodash';
+import colors from '../color-set';
 
-export class AdditiveForceArray extends HTMLElement {
+export default class AdditiveForceArrayVisualizer extends React.Component {
   constructor() {
-    super(); // pollyfill hack
-    this.innerHTML = `
-<style>
-  :host {
-    display: block;
-    font-family: arial, sans-serif;
-  }
-  .force-bar-array-wrapper {
-    text-align: center;
-  }
-  .force-bar-array-xaxis path {
-    fill: none;
-    opacity: 0.4;
-  }
-  .force-bar-array-xaxis .domain {
-    opacity: 0;
-  }
-  .force-bar-array-xaxis paths {
-    display: none;
-  }
-  .force-bar-array-yaxis path {
-    fill: none;
-    opacity: 0.4;
-  }
-  .force-bar-array-yaxis paths {
-    display: none;
-  }
-
-  .force-bar-array {
-    font-family: arial, sans-serif;
-    background: #fff;
-    color: #fff;
-    border: none;
-    /*position: fixed;
-    bottom: 0px;
-    left: 0px;
-    right: 0px;*/
-    width: 100%;
-    text-align: center;
-    /*box-shadow: 0px 0px 7px rgba(0,0,0,.4);*/
-  }
-
-  .tick line {
-    stroke: #000;
-    stroke-width: 1px;
-    opacity: 0.4;
-  }
-
-  .tick text {
-    fill: #000;
-    opacity: 0.5;
-    font-size: 12px;
-    padding: 0px;
-  }
-  .force-bar-array-blocks {
-    stroke: none;
-  }
-  .force-bar-array-labels {
-    stroke: none;
-    font-size: 12px;
-  }
-  .force-bar-array-labelBacking {
-    stroke: none;
-    opacity: 0.2;
-  }
-  .force-bar-array-labelLinks {
-    stroke-opacity: 0.5;
-    stroke-width: 1px;
-  }
-  .force-bar-array-blockDividers {
-    opacity: 1.0;
-    stroke-width: 2px;
-    fill: none;
-  }
-  .force-bar-array-labelDividers {
-    height: 21px;
-    width: 1px;
-  }
-  .force-bar-array-flabels {
-    font-size: 12px;
-    fill: #fff;
-    text-anchor: middle;
-  }
-  .additive-force-array-xlabel {
-    background: none;
-    border: 1px solid #ccc;
-    opacity: 0.5;
-    margin-bottom: 0px;
-    font-size: 12px;
-    font-family: arial;
-    margin-left: 80px;
-    max-width: 300px;
-  }
-  .additive-force-array-xlabel:focus {
-    outline: none;
-  }
-  .additive-force-array-ylabel {
-    position: relative;
-    top: 0px;
-    left: 0px;
-    transform: rotate(-90deg);
-    background: none;
-    border: 1px solid #ccc;
-    opacity: 0.5;
-    margin-bottom: 0px;
-    font-size: 12px;
-    font-family: arial;
-    max-width: 150px;
-  }
-  .additive-force-array-ylabel:focus {
-    outline: none;
-  }
-  .additive-force-array-hoverLine {
-    stroke-width: 1px;
-    stroke: #fff;
-    opacity: 1;
-  }
-  .additive-force-array-hoverx {
-    text-anchor: middle;
-    font-weight: bold;
-    fill: #000;
-    font-size: 12px;
-  }
-  .additive-force-array-hoverxOutline {
-    text-anchor: middle;
-    font-weight: bold;
-    fill: #fff;
-    stroke: #fff;
-    stroke-width: 6;
-    font-size: 12px;
-  }
-  .additive-force-array-hoverxTitle {
-    font-size: 12px;
-    text-anchor: middle;
-    opacity: 0.6;
-  }
-  .additive-force-array-hovery {
-    text-anchor: end;
-    font-weight: bold;
-    fill: #000;
-    font-size: 12px;
-  }
-  .additive-force-array-hoveryOutline {
-    text-anchor: end;
-    font-weight: bold;
-    fill: #fff;
-    stroke: #fff;
-    stroke-width: 6;
-    font-size: 12px;
-  }
-</style>
-<div class="force-bar-array-wrapper">
-  <select class="additive-force-array-xlabel">
-  </select>
-  <div style="height: 0px; text-align: left;">
-    <select class="additive-force-array-ylabel">
-    </select>
-  </div>
-  <svg class="force-bar-array" style="user-select: none; -webkit-user-select: none; display: block;">
-    <g class="mainGroup"></g>
-    <g class="onTopGroup"><g class="force-bar-array-xaxis" transform="translate(0,35)"></g><g class="force-bar-array-yaxis" transform="translate(0,35)"></g></g>
-    <g class="additive-force-array-hoverGroup1"></g>
-    <g class="additive-force-array-hoverGroup2"></g>
-    <text class="baseValueTitle"></text>
-    <line class="additive-force-array-hoverLine"></line>
-    <text class="additive-force-array-hoverxOutline"></text>
-    <text class="additive-force-array-hoverx"></text>
-    <text class="additive-force-array-hoverxTitle"></text>
-    <text class="additive-force-array-hoveryOutline"></text>
-    <text class="additive-force-array-hovery"></text>
-    <text class="joinPointTitleLeft"></text>
-    <text class="joinPointTitleLeftArrow"></text>
-    <text class="additive-force-array-yla9bel"></text>
-    <text class="joinPointTitleRightArrow"></text>
-    <text class="joinPointTitleRight"></text>
-  </svg>
-</div>
-    `;
-
-    this.colors = [
-      "rgb(245, 39, 87)", "rgb(30, 136, 229)", "rgb(24, 196, 93)", "rgb(124, 82, 255)", "#0099C6",
-      "#990099", "#DD4477", "#66AA00", "#B82E2E", "#316395",
-      "#994499", "#22AA99", "#AAAA11", "#6633CC", "#E67300"
-    ].map(x => hsl(x));
-    window.this_arrf = this;
-
-    this.root = select(this);
-    this.wrapper = this.root.select('.force-bar-array-wrapper');
-    this.svg = this.root.select('.force-bar-array');
-    this.group = this.root.select(".mainGroup");
-    this.onTopGroup = this.root.select(".onTopGroup");
-    this.xaxisElement = this.root.select(".force-bar-array-xaxis");
-    this.yaxisElement = this.root.select(".force-bar-array-yaxis");
-    this.xlabel = this.root.select('.additive-force-array-xlabel');
-    this.ylabel = this.root.select('.additive-force-array-ylabel');
-    this.hoverLine = this.root.select('.additive-force-array-hoverLine');
-    this.hoverx = this.root.select('.additive-force-array-hoverx');
-    this.hoverxOutline = this.root.select('.additive-force-array-hoverxOutline');
-    this.hoverxTitle = this.root.select('.additive-force-array-hoverxTitle');
-    this.hovery = this.root.select('.additive-force-array-hovery');
-    this.hoveryOutline = this.root.select('.additive-force-array-hoveryOutline');
-    this.hoverGroup1 = this.root.select('.additive-force-array-hoverGroup1');
-    this.hoverGroup2 = this.root.select('.additive-force-array-hoverGroup2');
-    this.redraw = debounce(() => this.draw(this.lastExplanation), 200);
-    this.lastData = {baseValue: 0};
+    super();
+    window.lastAdditiveForceArrayVisualizer = this;
     this.topOffset = 28;
     this.leftOffset = 80;
     this.height = 350;
+    this.effectFormat = format('.2');
+    this.redraw = debounce(() => this.draw(), 200);
+  }
+
+  componentDidMount() {
+
+    // create our permanent elements
+    this.mainGroup = this.svg.append('g');
+    this.onTopGroup = this.svg.append('g');
+    this.xaxisElement = this.onTopGroup.append('g')
+      .attr('transform', 'translate(0,35)')
+      .attr('class', 'force-bar-array-xaxis');
+    this.yaxisElement = this.onTopGroup.append('g')
+      .attr('transform', 'translate(0,35)')
+      .attr('class', 'force-bar-array-yaxis');
+    this.hoverGroup1 = this.svg.append('g');
+    this.hoverGroup2 = this.svg.append('g');
+    this.baseValueTitle = this.svg.append('text');
+    this.hoverLine = this.svg.append('line');
+    this.hoverxOutline = this.svg.append('text')
+      .attr("text-anchor", "middle")
+      .attr("font-weight", "bold")
+      .attr("fill", "#fff")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", "6")
+      .attr("font-size", "12px");
+    this.hoverx = this.svg.append('text')
+      .attr("text-anchor", "middle")
+      .attr("font-weight", "bold")
+      .attr("fill", "#000")
+      .attr("font-size", "12px");
+    this.hoverxTitle = this.svg.append('text')
+      .attr("text-anchor", "middle")
+      .attr("opacity", 0.6)
+      .attr("font-size", "12px");
+    this.hoveryOutline = this.svg.append('text')
+      .attr("text-anchor", "end")
+      .attr("font-weight", "bold")
+      .attr("fill", "#fff")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", "6")
+      .attr("font-size", "12px");
+    this.hovery = this.svg.append('text')
+      .attr("text-anchor", "end")
+      .attr("font-weight", "bold")
+      .attr("fill", "#000")
+      .attr("font-size", "12px");
+    this.xlabel = this.wrapper.select('.additive-force-array-xlabel');
+    this.ylabel = this.wrapper.select('.additive-force-array-ylabel');
+
+    // Create our colors and color gradients
+    this.colors = colors.colors.map(x => hsl(x));
+    this.brighterColors = [1.45, 1.6].map((v,i)=>this.colors[i].brighter(v));
+
+    // create our axes
     this.tickFormat = format(",.4");
-
-    this.colors.map((c,i) => {
-      let grad = this.svg.append("linearGradient")
-        .attr("id", "linear-grad-"+i)
-        .attr("x1", "0%").attr("y1", "0%")
-        .attr("x2", "0%").attr("y2", "100%");
-      grad.append("stop")
-        .attr("offset", "0%")
-        .attr("stop-color", c)
-        .attr("stop-opacity", 0.6);
-      grad.append("stop")
-        .attr("offset", "100%")
-        .attr("stop-color", c)
-        .attr("stop-opacity", 0);
-
-      let grad2 = this.svg.append("linearGradient")
-        .attr("id", "linear-backgrad-"+i)
-        .attr("x1", "0%").attr("y1", "0%")
-        .attr("x2", "0%").attr("y2", "100%");
-      grad2.append("stop")
-        .attr("offset", "0%")
-        .attr("stop-color", c)
-        .attr("stop-opacity", 0.5);
-      grad2.append("stop")
-        .attr("offset", "100%")
-        .attr("stop-color", c)
-        .attr("stop-opacity", 0);
-    });
-
     this.xscale = scaleLinear();
     this.xaxis = axisBottom()
       .scale(this.xscale)
@@ -254,7 +79,6 @@ export class AdditiveForceArray extends HTMLElement {
       .tickSizeOuter(0)
       .tickFormat(d => this.tickFormat(d))
       .tickPadding(-18);
-
     this.yscale = scaleLinear();
     this.yaxis = axisLeft()
       .scale(this.yscale)
@@ -263,34 +87,22 @@ export class AdditiveForceArray extends HTMLElement {
       .tickFormat(d => this.tickFormat(this.invLinkFunction(d)))
       .tickPadding(2);
 
-    this.xlabel.node().onchange = x => this.internalDraw();
-    this.ylabel.node().onchange = x => this.internalDraw();
-
-    //setInterval(x => this.internalDraw(), 1000);
+    this.xlabel.node().onchange = () => this.internalDraw();
+    this.ylabel.node().onchange = () => this.internalDraw();
 
     this.svg.on("mousemove", x => this.mouseMoved(x));
-    this.svg.on("mouseout", x => this.mouseLeft(x));
-  }
+    this.svg.on("mouseout", x => this.mouseOut(x));
 
-  static get observedAttributes() {
-    return ["explanations"];
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    this.draw(JSON.parse(newValue));
-  }
-
-  connectedCallback() {
+    // draw and then listen for resize events
+    this.draw();
     window.addEventListener("resize", this.redraw);
   }
 
-  disconnectedCallback() {
-    window.removeEventListener('resize', this.redraw);
+  componentDidUpdate() {
+    this.draw();
   }
 
-  invLinkFunction(x) { return this.lastData.baseValue + x; }
-
-  mouseLeft(event) {
+  mouseOut() {
     this.hoverLine.attr("display", "none");
     this.hoverx.attr("display", "none");
     this.hoverxOutline.attr("display", "none");
@@ -314,10 +126,10 @@ export class AdditiveForceArray extends HTMLElement {
     this.hoverGroup2.attr("display", "");
 
     let x = mouse(this.svg.node())[0];
-    if (this.currExplanations) {
-      for (i = 0; i < this.currExplanations.length; ++i) {
-        if (!nearestExp || Math.abs(nearestExp.xmapScaled-x) > Math.abs(this.currExplanations[i].xmapScaled-x)) {
-          nearestExp = this.currExplanations[i];
+    if (this.props.explanations) {
+      for (i = 0; i < this.props.explanations.length; ++i) {
+        if (!nearestExp || Math.abs(nearestExp.xmapScaled-x) > Math.abs(this.props.explanations[i].xmapScaled-x)) {
+          nearestExp = this.props.explanations[i];
         }
       }
 
@@ -326,7 +138,6 @@ export class AdditiveForceArray extends HTMLElement {
           .attr("x2", nearestExp.xmapScaled)
           .attr("y1", 0+this.topOffset)
           .attr("y2", this.height);
-
       this.hoverx
           .attr("x", nearestExp.xmapScaled)
           .attr("y", this.topOffset-5)
@@ -339,7 +150,6 @@ export class AdditiveForceArray extends HTMLElement {
           .attr("x", nearestExp.xmapScaled)
           .attr("y", this.topOffset-18)
           .text(nearestExp.count > 1 ? nearestExp.count+" averaged samples" : "");
-
       this.hovery
           .attr("x", this.leftOffset-6)
           .attr("y", nearestExp.joinPointy)
@@ -349,7 +159,7 @@ export class AdditiveForceArray extends HTMLElement {
           .attr("y", nearestExp.joinPointy)
           .text(this.tickFormat(this.invLinkFunction(nearestExp.joinPoint)));
 
-      let P = this.lastData.featureNames.length;
+      let P = this.props.featureNames.length;
 
       let posFeatures = [];
       let lastPos, pos;
@@ -380,9 +190,9 @@ export class AdditiveForceArray extends HTMLElement {
           valString = " = "+(isNaN(d.value) ? d.value : this.tickFormat(d.value));
         }
         if (nearestExp.count > 1) {
-          return "mean("+this.lastData.featureNames[d.ind]+")"+valString ;
+          return "mean("+this.props.featureNames[d.ind]+")"+valString ;
         } else {
-          return this.lastData.featureNames[d.ind]+valString;
+          return this.props.featureNames[d.ind]+valString;
         }
       };
 
@@ -444,74 +254,71 @@ export class AdditiveForceArray extends HTMLElement {
     }
   }
 
-  draw(data) {
-    if (data && data.explanations.length > 0) {
-      this.lastData = data;
-      for (let i = 0; i < data.explanations.length; ++i) data.explanations[i].simInd = i;
-      for (let i = 0; i < data.explanations.length; ++i) data.explanations[i].outValue = sum(map(data.explanations[i].features, x=>x.effect)) + data.baseValue;
+  draw() {
+    if (!this.props.explanations || this.props.explanations.length === 0) return;
 
-      // Find what features are actually used
-      let posDefinedFeatures = {};
-      let negDefinedFeatures = {};
-      let definedFeaturesValues = {};
-      for (let e of this.lastData.explanations) {
-        for (let k in e.features) {
-          if (posDefinedFeatures[k] === undefined) {
-            posDefinedFeatures[k] = 0;
-            negDefinedFeatures[k] = 0;
-            definedFeaturesValues[k] = 0;
-          }
-          if (e.features[k].effect > 0) {
-            posDefinedFeatures[k] += e.features[k].effect;
-          } else {
-            negDefinedFeatures[k] -= e.features[k].effect;
-          }
-          if (e.features[k].value !== null && e.features[k].value !== undefined) {
-            definedFeaturesValues[k] += 1;
-          }
+    // record the order in which the explanations were given
+    each(this.props.explanations, (x,i) => x.origInd = i);
+
+    // Find what features are actually used
+    let posDefinedFeatures = {};
+    let negDefinedFeatures = {};
+    let definedFeaturesValues = {};
+    for (let e of this.props.explanations) {
+      for (let k in e.features) {
+        if (posDefinedFeatures[k] === undefined) {
+          posDefinedFeatures[k] = 0;
+          negDefinedFeatures[k] = 0;
+          definedFeaturesValues[k] = 0;
+        }
+        if (e.features[k].effect > 0) {
+          posDefinedFeatures[k] += e.features[k].effect;
+        } else {
+          negDefinedFeatures[k] -= e.features[k].effect;
+        }
+        if (e.features[k].value !== null && e.features[k].value !== undefined) {
+          definedFeaturesValues[k] += 1;
         }
       }
-      this.usedFeatures = sortBy(keys(posDefinedFeatures), i=>-(posDefinedFeatures[i]+negDefinedFeatures[i]));
-      console.log("found ",this.usedFeatures.length," used features");
-
-      this.posOrderedFeatures = sortBy(this.usedFeatures, i=>posDefinedFeatures[i]);
-      this.negOrderedFeatures = sortBy(this.usedFeatures, i=>-negDefinedFeatures[i]);
-      this.singleValueFeatures = filter(this.usedFeatures, i => definedFeaturesValues[i] > 0);
-
-      let options = [
-        "sample order by similarity",
-        "sample order by output value"
-      ].concat(this.singleValueFeatures.map(i=>data.featureNames[i]));
-      let xLabelOptions = this.xlabel.selectAll('option').data(options);
-      xLabelOptions.enter().append("option")
-        .merge(xLabelOptions)
-          .attr("value", d => d)
-          .text(d => d);
-      xLabelOptions.exit().remove();
-
-      let n = data.outNames[0] ? data.outNames[0] : "model output value";
-      options = map(this.usedFeatures, i=>[data.featureNames[i], data.featureNames[i]+" effects"])
-      options.unshift(["model output value", n]);
-      let yLabelOptions = this.ylabel.selectAll('option').data(options);
-      yLabelOptions.enter().append("option")
-        .merge(yLabelOptions)
-          .attr("value", d => d[0])
-          .text(d => d[1]);
-      yLabelOptions.exit().remove();
-
-      this.ylabel
-          .style("top", ((this.height-10 - this.topOffset)/2 + this.topOffset) + "px")
-          .style("left", (10-this.ylabel.node().offsetWidth/2)+"px")
-
-      this.internalDraw();
     }
+    this.usedFeatures = sortBy(keys(posDefinedFeatures), i=>-(posDefinedFeatures[i]+negDefinedFeatures[i]));
+    console.log("found ",this.usedFeatures.length," used features");
+
+    this.posOrderedFeatures = sortBy(this.usedFeatures, i=>posDefinedFeatures[i]);
+    this.negOrderedFeatures = sortBy(this.usedFeatures, i=>-negDefinedFeatures[i]);
+    this.singleValueFeatures = filter(this.usedFeatures, i => definedFeaturesValues[i] > 0);
+
+    let options = [
+      "sample order by similarity",
+      "sample order by output value",
+      "original sample ordering"
+    ].concat(this.singleValueFeatures.map(i=>this.props.featureNames[i]));
+    let xLabelOptions = this.xlabel.selectAll('option').data(options);
+    xLabelOptions.enter().append("option")
+      .merge(xLabelOptions)
+        .attr("value", d => d)
+        .text(d => d);
+    xLabelOptions.exit().remove();
+
+    let n = this.props.outNames[0] ? this.props.outNames[0] : "model output value";
+    options = map(this.usedFeatures, i=>[this.props.featureNames[i], this.props.featureNames[i]+" effects"])
+    options.unshift(["model output value", n]);
+    let yLabelOptions = this.ylabel.selectAll('option').data(options);
+    yLabelOptions.enter().append("option")
+      .merge(yLabelOptions)
+        .attr("value", d => d[0])
+        .text(d => d[1]);
+    yLabelOptions.exit().remove();
+
+    this.ylabel
+        .style("top", ((this.height-10 - this.topOffset)/2 + this.topOffset) + "px")
+        .style("left", (10-this.ylabel.node().offsetWidth/2)+"px")
+      this.internalDraw();
   }
 
   internalDraw() {
-    if (!this.lastData) return;
-
     // we fill in any implicit feature values and assume they have a zero effect and value
-    for (let e of this.lastData.explanations) {
+    for (let e of this.props.explanations) {
       for (let i of this.usedFeatures) {
         if (!e.features.hasOwnProperty(i)) {
           e.features[i] = { effect: 0, value: 0 };
@@ -523,15 +330,18 @@ export class AdditiveForceArray extends HTMLElement {
     let explanations;
     let xsort = this.xlabel.node().value;
     if (xsort === "sample order by similarity") {
-      explanations = sortBy(this.lastData.explanations, x=>x.simInd);
-      map(explanations, (e,i)=>e.xmap = i);
+      explanations = sortBy(this.props.explanations, x=>x.simIndex);
+      each(explanations, (e,i)=>e.xmap = i);
     } else if (xsort === "sample order by output value") {
-      explanations = sortBy(this.lastData.explanations, x=>-x.outValue);
-      map(explanations, (e,i)=>e.xmap = i);
+      explanations = sortBy(this.props.explanations, x=>-x.outValue);
+      each(explanations, (e,i)=>e.xmap = i);
+    } else if (xsort === "original sample ordering") {
+      explanations = sortBy(this.props.explanations, x=>x.origInd);
+      each(explanations, (e,i)=>e.xmap = i);
     } else {
-      let ind = findIndex(this.lastData.featureNames, x=>x===xsort);
-      map(this.lastData.explanations, (e,i)=> e.xmap = e.features[ind].value);
-      let explanations2 = sortBy(this.lastData.explanations, x=>x.xmap);
+      let ind = findKey(this.props.featureNames, x=>x===xsort);
+      each(this.props.explanations, (e,i)=> e.xmap = e.features[ind].value);
+      let explanations2 = sortBy(this.props.explanations, x=>x.xmap);
       let xvals = map(explanations2, x=>x.xmap);
       let xmin = min(xvals);
       let xmax = max(xvals);
@@ -576,18 +386,18 @@ export class AdditiveForceArray extends HTMLElement {
     this.currUsedFeatures = this.usedFeatures;
     this.currPosOrderedFeatures = this.posOrderedFeatures;
     this.currNegOrderedFeatures = this.negOrderedFeatures;
-    //let filteredFeatureNames = this.lastData.featureNames;
+    //let filteredFeatureNames = this.props.featureNames;
     let yvalue = this.ylabel.node().value;
     if (yvalue !== "model output value") {
       explanations = cloneDeep(explanations);
-      let ind = findIndex(this.lastData.featureNames, x=>x===yvalue);
+      let ind = findKey(this.props.featureNames, x=>x===yvalue);
 
       for (let i = 0; i < explanations.length; ++i) {
         let v = explanations[i].features[ind];
         explanations[i].features = {};
         explanations[i].features[ind] = v;
       }
-      //filteredFeatureNames = [this.lastData.featureNames[ind]];
+      //filteredFeatureNames = [this.props.featureNames[ind]];
       this.currUsedFeatures = [ind];
       this.currPosOrderedFeatures = [ind];
       this.currNegOrderedFeatures = [ind];
@@ -595,21 +405,21 @@ export class AdditiveForceArray extends HTMLElement {
     this.currExplanations = explanations;
 
     // determine the link function
-    if (this.lastData.link === "identity") { // assume all links are the same
-      this.invLinkFunction = x => this.lastData.baseValue + x;
-    } else if (this.lastData.link === "logit") {
-      this.invLinkFunction = x => 1/(1+Math.exp(-(this.lastData.baseValue + x))); // logistic is inverse of logit
+    if (this.props.link === "identity") { // assume all links are the same
+      this.invLinkFunction = x => this.props.baseValue + x;
+    } else if (this.props.link === "logit") {
+      this.invLinkFunction = x => 1/(1+Math.exp(-(this.props.baseValue + x))); // logistic is inverse of logit
     } else {
-      console.log("ERROR: Unrecognized link function: ", this.lastData.link)
+      console.log("ERROR: Unrecognized link function: ", this.props.link)
     }
 
     this.predValues = map(explanations, e=>sum(map(e.features, x=>x.effect)));
-
-    //let data = sortBy(explanation.features, x=>x.name);
+    
     let width = this.wrapper.node().offsetWidth;
     if (width == 0) return setTimeout(() => this.draw(explanations), 500);
 
     this.svg.style('height', this.height);
+    this.svg.style('width', width);
 
     let xvals = map(explanations, x=>x.xmap);
     this.xscale.domain([min(xvals), max(xvals)]).range([this.leftOffset,width]).clamp(true);
@@ -663,7 +473,7 @@ export class AdditiveForceArray extends HTMLElement {
       .x(d => d[0])
       .y(d => d[1]);
 
-    let areasPos = this.group.selectAll(".force-bar-array-area-pos").data(this.currUsedFeatures);
+    let areasPos = this.mainGroup.selectAll(".force-bar-array-area-pos").data(this.currUsedFeatures);
     areasPos.enter().append("path")
         .attr("class", "force-bar-array-area-pos")
       .merge(areasPos)
@@ -675,7 +485,7 @@ export class AdditiveForceArray extends HTMLElement {
         .attr("fill", this.colors[0]);
     areasPos.exit().remove();
 
-    let areasNeg = this.group.selectAll(".force-bar-array-area-neg").data(this.currUsedFeatures);
+    let areasNeg = this.mainGroup.selectAll(".force-bar-array-area-neg").data(this.currUsedFeatures);
     areasNeg.enter().append("path")
         .attr("class", "force-bar-array-area-neg")
       .merge(areasNeg)
@@ -687,7 +497,7 @@ export class AdditiveForceArray extends HTMLElement {
         .attr("fill", this.colors[1]);
     areasNeg.exit().remove();
 
-    let dividersPos = this.group.selectAll(".force-bar-array-divider-pos").data(this.currUsedFeatures);
+    let dividersPos = this.mainGroup.selectAll(".force-bar-array-divider-pos").data(this.currUsedFeatures);
     dividersPos.enter().append("path")
         .attr("class", "force-bar-array-divider-pos")
       .merge(dividersPos)
@@ -700,7 +510,7 @@ export class AdditiveForceArray extends HTMLElement {
         .attr("stroke", d => this.colors[0].brighter(1.2));
     dividersPos.exit().remove();
 
-    let dividersNeg = this.group.selectAll(".force-bar-array-divider-neg").data(this.currUsedFeatures);
+    let dividersNeg = this.mainGroup.selectAll(".force-bar-array-divider-neg").data(this.currUsedFeatures);
     dividersNeg.enter().append("path")
         .attr("class", "force-bar-array-divider-neg")
       .merge(dividersNeg)
@@ -780,7 +590,7 @@ export class AdditiveForceArray extends HTMLElement {
             boxWidth = explanations[endi].xmapScaled - explanations[starti].xmapScaled;
             //console.log("found  ",boxWidth,hbounds)
 
-            featureLabels.push([(explanations[endi].xmapScaled + explanations[starti].xmapScaled)/2, (hbounds.top+hbounds.bottom)/2, this.lastData.featureNames[ind]]);
+            featureLabels.push([(explanations[endi].xmapScaled + explanations[starti].xmapScaled)/2, (hbounds.top+hbounds.bottom)/2, this.props.featureNames[ind]]);
 
             let lastEnd = explanations[endi].xmapScaled;
             starti = endi;
@@ -802,10 +612,98 @@ export class AdditiveForceArray extends HTMLElement {
         .text(d => d[2]);
     featureLabelText.exit().remove();
   }
-}
 
-try {
-  customElements.define('additive-force-array', AdditiveForceArray);
-} catch (e) {
-  console.log("additive-force element already registered...")
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.redraw);
+  }
+
+  render() {
+    return (
+      <div ref={x=>this.wrapper=select(x)} style={{textAlign: "center"}}>
+        <style dangerouslySetInnerHTML={{__html: `
+          .force-bar-array-wrapper {
+            text-align: center;
+          }
+          .force-bar-array-xaxis path {
+            fill: none;
+            opacity: 0.4;
+          }
+          .force-bar-array-xaxis .domain {
+            opacity: 0;
+          }
+          .force-bar-array-xaxis paths {
+            display: none;
+          }
+          .force-bar-array-yaxis path {
+            fill: none;
+            opacity: 0.4;
+          }
+          .force-bar-array-yaxis paths {
+            display: none;
+          }
+          .tick line {
+            stroke: #000;
+            stroke-width: 1px;
+            opacity: 0.4;
+          }
+          .tick text {
+            fill: #000;
+            opacity: 0.5;
+            font-size: 12px;
+            padding: 0px;
+          }
+          .force-bar-array-flabels {
+            font-size: 12px;
+            fill: #fff;
+            text-anchor: middle;
+          }
+          .additive-force-array-xlabel {
+            background: none;
+            border: 1px solid #ccc;
+            opacity: 0.5;
+            margin-bottom: 0px;
+            font-size: 12px;
+            font-family: arial;
+            margin-left: 80px;
+            max-width: 300px;
+          }
+          .additive-force-array-xlabel:focus {
+            outline: none;
+          }
+          .additive-force-array-ylabel {
+            position: relative;
+            top: 0px;
+            left: 0px;
+            transform: rotate(-90deg);
+            background: none;
+            border: 1px solid #ccc;
+            opacity: 0.5;
+            margin-bottom: 0px;
+            font-size: 12px;
+            font-family: arial;
+            max-width: 150px;
+          }
+          .additive-force-array-ylabel:focus {
+            outline: none;
+          }
+          .additive-force-array-hoverLine {
+            stroke-width: 1px;
+            stroke: #fff;
+            opacity: 1;
+          }`}}>
+        </style>
+        <select className="additive-force-array-xlabel">
+        </select>
+        <div style={{height: "0px", textAlign: "left"}}>
+          <select className="additive-force-array-ylabel">
+          </select>
+        </div>
+        <svg ref={x=>this.svg=select(x)} style={{
+            userSelect: "none",
+            display: "block",
+            fontFamily: "arial",
+            sansSerif: true}}></svg>
+      </div>
+    );
+  }
 }

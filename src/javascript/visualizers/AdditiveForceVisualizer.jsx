@@ -1,115 +1,43 @@
-import {select} from 'd3-selection';
+import React from 'react';
+import {select,selectAll} from 'd3-selection';
 import {scaleLinear} from 'd3-scale';
 import {extent} from 'd3-array';
 import {format} from 'd3-format';
 import {axisBottom} from 'd3-axis';
 import {line} from 'd3-shape';
-import {rgb,hsl,lab} from 'd3-color';
-import {sortBy, sum, map, filter, debounce, findIndex} from 'lodash';
+import {hsl} from 'd3-color';
+import {sortBy, max, copy, map, each, sum, filter, findIndex, debounce} from 'lodash';
+import colors from '../color-set';
 
-export class AdditiveForce extends HTMLElement {
+export default class AdditiveForceVisualizer extends React.Component {
   constructor() {
-    super(); // pollyfill hack
-    this.innerHTML = `
-<style>
-  :host {
-    display: block;
-    font-family: arial, sans-serif;
-  }
-  .force-bar-axis path {
-    fill: none;
-    opacity: 0.4;
-  }
-  .force-bar-axis paths {
-    display: none;
+    super();
+    window.lastAdditiveForceVisualizer = this;
+    this.effectFormat = format('.2');
+    this.redraw = debounce(() => this.draw(), 200);
   }
 
-  .force-bar {
-    font-family: arial, sans-serif;
-    background: #fff;
-    color: #fff;
-    border: none;
-    /*position: fixed;
-    bottom: 0px;
-    left: 0px;
-    right: 0px;*/
-    width: 100%;
-    text-align: center;
-    /*box-shadow: 0px 0px 7px rgba(0,0,0,.4);*/
-  }
+  componentDidMount() {
 
-  .tick line {
-    stroke: #000;
-    stroke-width: 1px;
-    opacity: 0.4;
-  }
+    // create our permanent elements
+    this.mainGroup = this.svg.append('g');
+    this.axisElement = this.mainGroup.append('g')
+      .attr('transform', 'translate(0,35)')
+      .attr('class', 'force-bar-axis');
+    this.onTopGroup = this.svg.append('g');
+    this.baseValueTitle = this.svg.append('text');
+    this.joinPointLine = this.svg.append('line');
+    this.joinPointLabelOutline = this.svg.append('text');
+    this.joinPointLabel = this.svg.append('text');
+    this.joinPointTitleLeft = this.svg.append('text');
+    this.joinPointTitleLeftArrow = this.svg.append('text');
+    this.joinPointTitle = this.svg.append('text');
+    this.joinPointTitleRightArrow = this.svg.append('text');
+    this.joinPointTitleRight = this.svg.append('text');
 
-  .tick text {
-    fill: #000;
-    opacity: 0.5;
-    font-size: 12px;
-    padding: 0px;
-  }
-  .force-bar-blocks {
-    stroke: none;
-  }
-  .force-bar-labels {
-    stroke: none;
-    font-size: 12px;
-  }
-  .force-bar-labelBacking {
-    stroke: none;
-    opacity: 0.2;
-  }
-  .force-bar-labelLinks {
-    stroke-opacity: 0.5;
-    stroke-width: 1px;
-  }
-  .force-bar-blockDividers {
-    opacity: 1.0;
-    stroke-width: 2px;
-    fill: none;
-  }
-  .force-bar-labelDividers {
-    height: 21px;
-    width: 1px;
-  }
-</style>
-<div class="force-bar-wrapper">
-  <svg class="force-bar" style="user-select: none; -webkit-user-select: none; display: block;">
-    <g class="mainGroup"><g class="force-bar-axis" transform="translate(0,35)"></g></g>
-    <g class="onTopGroup"></g>
-    <text class="baseValueTitle"></text>
-    <line class="joinPointLine"></line>
-    <text class="joinPointLabelOutline"></text>
-    <text class="joinPointLabel"></text>
-    <text class="joinPointTitleLeft"></text>
-    <text class="joinPointTitleLeftArrow"></text>
-    <text class="joinPointTitle"></text>
-    <text class="joinPointTitleRightArrow"></text>
-    <text class="joinPointTitleRight"></text>
-  </svg>
-</div>
-    `;
-
-    this.colors = [
-      "rgb(245, 39, 87)", "rgb(30, 136, 229)", "rgb(24, 196, 93)", "rgb(124, 82, 255)", "#0099C6",
-      "#990099", "#DD4477", "#66AA00", "#B82E2E", "#316395",
-      "#994499", "#22AA99", "#AAAA11", "#6633CC", "#E67300"
-    ].map(x => hsl(x));
-    window.this_af = this;
+    // Create our colors and color gradients
+    this.colors = colors.colors.map(x => hsl(x));
     this.brighterColors = [1.45, 1.6].map((v,i)=>this.colors[i].brighter(v));
-
-    this.root = select(this);
-    this.wrapper = this.root.select('.force-bar-wrapper');
-    this.svg = this.root.select('.force-bar');
-    this.group = this.root.select(".mainGroup");
-    this.onTopGroup = this.root.select(".onTopGroup");
-    this.axisElement = this.root.select(".force-bar-axis");
-    this.redraw = debounce(() => this.draw(this.lastExplanation), 200);
-    this.baseValue = 0;
-    this.tickFormat = format(",.4");
-
     this.colors.map((c,i) => {
       let grad = this.svg.append("linearGradient")
         .attr("id", "linear-grad-"+i)
@@ -123,7 +51,6 @@ export class AdditiveForce extends HTMLElement {
         .attr("offset", "100%")
         .attr("stop-color", c)
         .attr("stop-opacity", 0);
-
       let grad2 = this.svg.append("linearGradient")
         .attr("id", "linear-backgrad-"+i)
         .attr("x1", "0%").attr("y1", "0%")
@@ -138,6 +65,8 @@ export class AdditiveForce extends HTMLElement {
         .attr("stop-opacity", 0);
     });
 
+    // create our x axis
+    this.tickFormat = format(",.4");
     this.scaleCentered = scaleLinear();
     this.axis = axisBottom()
       .scale(this.scaleCentered)
@@ -145,51 +74,40 @@ export class AdditiveForce extends HTMLElement {
       .tickSizeOuter(0)
       .tickFormat(d => this.tickFormat(this.invLinkFunction(d)))
       .tickPadding(-18);
-  }
 
-  static get observedAttributes() {
-    return ["explanation"];
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    this.draw(JSON.parse(newValue));
-  }
-
-  connectedCallback() {
+    // draw and then listen for resize events
+    this.draw();
     window.addEventListener("resize", this.redraw);
   }
 
-  disconnectedCallback() {
-    window.removeEventListener('resize', this.redraw);
+  componentDidUpdate() {
+    this.draw();
   }
 
-  invLinkFunction(x) { return this.baseValue + x; }
+  draw() {
 
-  draw(explanation) {
-    this.lastExplanation = explanation;
+    // copy the feature names onto the features
+    each(this.props.featureNames, (n,i) => {
+      if (this.props.features[i]) this.props.features[i].name = n;
+    });
 
-    // record the index of each feature
-    for (let i = 0; i < explanation.featureNames.length; ++i) {
-      if (explanation.features.hasOwnProperty(i)) {
-        explanation.features[i].ind = i;
-      }
-    }
-
-    this.baseValue = explanation.baseValue;
-    if (explanation.link === "identity") {
-      this.invLinkFunction = x => this.baseValue + x; // logistic is inverse of logit
-    } else if (explanation.link === "logit") {
-      this.invLinkFunction = x => 1/(1+Math.exp(-(this.baseValue + x))); // logistic is inverse of logit
+    // create our link function
+    if (this.props.link === "identity") {
+      this.invLinkFunction = x => this.props.baseValue + x;
+    } else if (this.props.link === "logit") {
+      this.invLinkFunction = x => 1/(1+Math.exp(-(this.props.baseValue + x))); // logistic is inverse of logit
     } else {
-      console.log("ERROR: Unrecognized link function: ", explanation.link)
+      console.log("ERROR: Unrecognized link function: ", this.props.link)
     }
 
-    let data = sortBy(explanation.features, x=>-1/(x.effect+1e-10));
-    let width = this.wrapper.node().offsetWidth;
-    if (width == 0) return setTimeout(() => this.draw(explanation), 500);
+    // Set the dimensions of the plot
+    let width = this.svg.node().parentNode.offsetWidth;
+    if (width == 0) return setTimeout(() => this.draw(this.props), 500);
     this.svg.style('height', 150);
-    this.topOffset = 50; // 35
-    console.log("width", width)
+    this.svg.style('width', width);
+    let topOffset = 50;
+
+    let data = sortBy(this.props.features, x=>-1/(x.effect+1e-10));
     let totalEffect = sum(map(data, x=>Math.abs(x.effect)));
     let totalPosEffects = sum(map(filter(data, x=>x.effect>0), x=>x.effect)) || 0;
     let totalNegEffects = sum(map(filter(data, x=>x.effect<0), x=>-x.effect)) || 0;
@@ -198,7 +116,7 @@ export class AdditiveForce extends HTMLElement {
     let scaleOffset = width/2 - scale(totalNegEffects);
 
     this.scaleCentered.domain([-this.domainSize/2, this.domainSize/2]).range([0,width]).clamp(true);
-    this.axisElement.attr("transform", "translate(0,"+this.topOffset+")").call(this.axis);
+    this.axisElement.attr("transform", "translate(0,"+topOffset+")").call(this.axis);
 
     // calculate the position of the join point between positive and negative effects
     // and also the positions of each feature effect block
@@ -219,7 +137,7 @@ export class AdditiveForce extends HTMLElement {
     let lineFunction = line()
       .x(d => d[0])
       .y(d => d[1]);
-    let blocks = this.group.selectAll(".force-bar-blocks").data(data);
+    let blocks = this.mainGroup.selectAll(".force-bar-blocks").data(data);
     blocks.enter().append("path")
         .attr("class", "force-bar-blocks")
       .merge(blocks)
@@ -231,12 +149,12 @@ export class AdditiveForce extends HTMLElement {
           if (i === joinPointIndex) pointShiftStart = 0;
           if (i === joinPointIndex-1) pointShiftEnd = 0;
           return lineFunction([
-            [x, 6+this.topOffset],
-            [x+w, 6+this.topOffset],
-            [x+w+pointShiftEnd, 14.5+this.topOffset],
-            [x+w, 23+this.topOffset],
-            [x, 23+this.topOffset],
-            [x+pointShiftStart, 14.5+this.topOffset],
+            [x, 6+topOffset],
+            [x+w, 6+topOffset],
+            [x+w+pointShiftEnd, 14.5+topOffset],
+            [x+w, 23+topOffset],
+            [x, 23+topOffset],
+            [x+pointShiftStart, 14.5+topOffset],
           ]);
         })
         .attr("fill", d=>d.effect > 0 ? this.colors[0] : this.colors[1]);
@@ -250,12 +168,13 @@ export class AdditiveForce extends HTMLElement {
     let labels = this.onTopGroup.selectAll(".force-bar-labels").data(filteredData);
     labels = labels.enter().append("text")
         .attr("class", "force-bar-labels")
-        .attr("y", d => 48+this.topOffset)
+        .attr("font-size", "12px")
+        .attr("y", d => 48+topOffset)
       .merge(labels)
         .text(d => {
           if (d.value !== undefined && d.value != null) {
-            return explanation.featureNames[d.ind]+" = "+(isNaN(d.value) ? d.value : this.tickFormat(d.value));
-          } else return explanation.featureNames[d.ind];
+            return d.name+" = "+(isNaN(d.value) ? d.value : this.tickFormat(d.value));
+          } else return d.name;
         })
         .attr("fill", d=>d.effect > 0 ? this.colors[0] : this.colors[1])
         .attr("stroke", function(d, i) {
@@ -293,53 +212,61 @@ export class AdditiveForce extends HTMLElement {
     let ind = findIndex(data, filteredData[0])-1;
     if (ind >= 0) filteredDataPlusOne.unshift(data[ind]);
 
-    let labelBacking = this.group.selectAll(".force-bar-labelBacking").data(filteredData);
+    let labelBacking = this.mainGroup.selectAll(".force-bar-labelBacking").data(filteredData);
     labelBacking.enter().append("path")
         .attr("class", "force-bar-labelBacking")
+        .attr("stroke", "none")
+        .attr("opacity", 0.2)
       .merge(labelBacking)
         .attr("d", d => {
           return lineFunction([
-            [scale(d.x) + scale(Math.abs(d.effect)) + scaleOffset, 23+this.topOffset],
-            [(d.effect > 0 ? scale(d.textx) : scale(d.textx) + d.textWidth) + scaleOffset + 5, 33+this.topOffset],
-            [(d.effect > 0 ? scale(d.textx) : scale(d.textx) + d.textWidth) + scaleOffset + 5, 54+this.topOffset],
-            [(d.effect > 0 ? scale(d.textx) - d.textWidth : scale(d.textx)) + scaleOffset - 5, 54+this.topOffset],
-            [(d.effect > 0 ? scale(d.textx) - d.textWidth : scale(d.textx)) + scaleOffset - 5, 33+this.topOffset],
-            [scale(d.x) + scaleOffset, 23+this.topOffset]
+            [scale(d.x) + scale(Math.abs(d.effect)) + scaleOffset, 23+topOffset],
+            [(d.effect > 0 ? scale(d.textx) : scale(d.textx) + d.textWidth) + scaleOffset + 5, 33+topOffset],
+            [(d.effect > 0 ? scale(d.textx) : scale(d.textx) + d.textWidth) + scaleOffset + 5, 54+topOffset],
+            [(d.effect > 0 ? scale(d.textx) - d.textWidth : scale(d.textx)) + scaleOffset - 5, 54+topOffset],
+            [(d.effect > 0 ? scale(d.textx) - d.textWidth : scale(d.textx)) + scaleOffset - 5, 33+topOffset],
+            [scale(d.x) + scaleOffset, 23+topOffset]
           ]);
         })
         .attr("fill", d => `url(#linear-backgrad-${d.effect > 0 ? 0 : 1})`);
     labelBacking.exit().remove();
 
-    let labelDividers = this.group.selectAll(".force-bar-labelDividers").data(filteredData.slice(0,-1));
+    let labelDividers = this.mainGroup.selectAll(".force-bar-labelDividers").data(filteredData.slice(0,-1));
     labelDividers.enter().append("rect")
         .attr("class", "force-bar-labelDividers")
-        .attr("y", 33+this.topOffset)
+        .attr("height", "21px")
+        .attr("width", "1px")
+        .attr("y", 33+topOffset)
       .merge(labelDividers)
         .attr("x", d => (d.effect > 0 ? scale(d.textx) : scale(d.textx) + d.textWidth) + scaleOffset + 4.5)
         .attr("fill", d => `url(#linear-grad-${d.effect > 0 ? 0 : 1})`);
     labelDividers.exit().remove();
 
-    let labelLinks = this.group.selectAll(".force-bar-labelLinks").data(filteredData.slice(0,-1));
+    let labelLinks = this.mainGroup.selectAll(".force-bar-labelLinks").data(filteredData.slice(0,-1));
     labelLinks.enter().append("line")
         .attr("class", "force-bar-labelLinks")
-        .attr("y1", 23+this.topOffset)
-        .attr("y2", 33+this.topOffset)
+        .attr("y1", 23+topOffset)
+        .attr("y2", 33+topOffset)
+        .attr("stroke-opacity", 0.5)
+        .attr("stroke-width", 1)
       .merge(labelLinks)
         .attr("x1", d => scale(d.x) + scale(Math.abs(d.effect)) + scaleOffset)
         .attr("x2", d => (d.effect > 0 ? scale(d.textx) : scale(d.textx) + d.textWidth) + scaleOffset + 5)
         .attr("stroke", d=>d.effect > 0 ? this.colors[0] : this.colors[1]);
     labelLinks.exit().remove();
 
-    let blockDividers = this.group.selectAll(".force-bar-blockDividers").data(data.slice(0,-1));
+    let blockDividers = this.mainGroup.selectAll(".force-bar-blockDividers").data(data.slice(0,-1));
     blockDividers.enter().append("path")
         .attr("class", "force-bar-blockDividers")
+        .attr("stroke-width", 2)
+        .attr("fill", "none")
       .merge(blockDividers)
         .attr("d", d => {
           let pos = scale(d.x) + scale(Math.abs(d.effect)) + scaleOffset;
           return lineFunction([
-            [pos, 6+this.topOffset],
-            [pos+(d.effect<0 ? -4 : 4), 14.5+this.topOffset],
-            [pos, 23+this.topOffset]
+            [pos, 6+topOffset],
+            [pos+(d.effect<0 ? -4 : 4), 14.5+topOffset],
+            [pos, 23+topOffset]
           ]);
         })
         .attr("stroke", (d,i) => {
@@ -349,18 +276,18 @@ export class AdditiveForce extends HTMLElement {
         });
     blockDividers.exit().remove();
 
-    this.root.select('.joinPointLine')
+    this.joinPointLine
         .attr("x1", scale(joinPoint) + scaleOffset)
         .attr("x2", scale(joinPoint) + scaleOffset)
-        .attr("y1", 0+this.topOffset)
-        .attr("y2", 6+this.topOffset)
+        .attr("y1", 0+topOffset)
+        .attr("y2", 6+topOffset)
         .attr("stroke", "#000")
         .attr("stroke-width", 1)
         .attr("opacity", 1);
 
-    this.root.select('.joinPointLabelOutline')
+    this.joinPointLabelOutline
         .attr("x", scale(joinPoint) + scaleOffset)
-        .attr("y", -5+this.topOffset)
+        .attr("y", -5+topOffset)
         .attr("color", "#fff")
         .attr('text-anchor', 'middle')
         .attr('font-weight', 'bold')
@@ -369,69 +296,94 @@ export class AdditiveForce extends HTMLElement {
         .text(format(",.2f")(this.invLinkFunction(joinPoint - totalNegEffects)))
         .attr("opacity", 1);
 
-    this.root.select('.joinPointLabel')
+    this.joinPointLabel
         .attr("x", scale(joinPoint) + scaleOffset)
-        .attr("y", -5+this.topOffset)
+        .attr("y", -5+topOffset)
         .attr('text-anchor', 'middle')
         .attr('font-weight', 'bold')
         .attr("fill", "#000")
         .text(format(",.2f")(this.invLinkFunction(joinPoint - totalNegEffects)))
         .attr("opacity", 1);
 
-    this.root.select('.joinPointTitle')
+    this.joinPointTitle
         .attr("x", scale(joinPoint) + scaleOffset)
-        .attr("y", -22+this.topOffset)
+        .attr("y", -22+topOffset)
         .attr('text-anchor', 'middle')
         .attr('font-size', '12')
         .attr("fill", "#000")
-        .text(explanation.outNames[0])
+        .text(this.props.outNames[0])
         .attr("opacity", 0.5);
 
-    this.root.select('.joinPointTitleLeft')
+    this.joinPointTitleLeft
         .attr("x", scale(joinPoint) + scaleOffset - 16)
-        .attr("y", -38+this.topOffset)
+        .attr("y", -38+topOffset)
         .attr('text-anchor', 'end')
         .attr('font-size', '13')
         .attr("fill", this.colors[0])
         .text("higher")
         .attr("opacity", 1.0);
-    this.root.select('.joinPointTitleRight')
+    this.joinPointTitleRight
         .attr("x", scale(joinPoint) + scaleOffset + 16)
-        .attr("y", -38+this.topOffset)
+        .attr("y", -38+topOffset)
         .attr('text-anchor', 'start')
         .attr('font-size', '13')
         .attr("fill", this.colors[1])
         .text("lower")
         .attr("opacity", 1.0);
-    this.root.select('.joinPointTitleLeftArrow')
+    this.joinPointTitleLeftArrow
         .attr("x", scale(joinPoint) + scaleOffset + 7)
-        .attr("y", -42+this.topOffset)
+        .attr("y", -42+topOffset)
         .attr('text-anchor', 'end')
         .attr('font-size', '13')
         .attr("fill", this.colors[0])
         .text("→")
         .attr("opacity", 1.0);
-    this.root.select('.joinPointTitleRightArrow')
+    this.joinPointTitleRightArrow
         .attr("x", scale(joinPoint) + scaleOffset - 7)
-        .attr("y", -36+this.topOffset)
+        .attr("y", -36+topOffset)
         .attr('text-anchor', 'start')
         .attr('font-size', '13')
         .attr("fill", this.colors[1])
         .text("←")
         .attr("opacity", 1.0);
-    this.root.select('.baseValueTitle')
+    this.baseValueTitle
         .attr("x", this.scaleCentered(0))
-        .attr("y", -22+this.topOffset)
+        .attr("y", -22+topOffset)
         .attr('text-anchor', 'middle')
         .attr('font-size', '12')
         .attr("fill", "#000")
         .text("base value")
         .attr("opacity", 0.5);
   }
-}
 
-try {
-  customElements.define('additive-force', AdditiveForce);
-} catch (e) {
-  console.log("additive-force element already registered...")
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.redraw);
+  }
+
+  render() {
+    return (
+      <svg ref={x=>this.svg=select(x)} style={{userSelect: "none", display: "block", fontFamily: "arial", sansSerif: true}}>
+        <style dangerouslySetInnerHTML={{__html: `
+          .force-bar-axis path {
+            fill: none;
+            opacity: 0.4;
+          }
+          .force-bar-axis paths {
+            display: none;
+          }
+          .tick line {
+            stroke: #000;
+            stroke-width: 1px;
+            opacity: 0.4;
+          }
+          .tick text {
+            fill: #000;
+            opacity: 0.5;
+            font-size: 12px;
+            padding: 0px;
+          }`}}>
+        </style>
+      </svg>
+    );
+  }
 }
