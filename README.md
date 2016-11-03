@@ -4,10 +4,11 @@
 
 ---
 
-**Interpretable ML (iML)** explains outputs from any model, regardless of how complex that model may be. The iML package contains a single function, `explain`, which produces an `Explanation` object that can be inspected or visualized in a Jupyter notebook:
+**Interpretable ML (iML)** explains the output of any model, regardless of the model's complexity. Different approaches to explaining models are implemented as different `Explainer` objects. After wrapping your model, `f`, in an iML `Explainer` any model prediction `f(x)` can be explained as an `Explanation` object that can be inspected or visualized in a Jupyter notebook:
 
 ```python
-explain(x, f, data) # explain f(x) using a reference sample population 'data'
+e = ESExplainer(f, data).explain(x) # explain f(x) using a reference sample population 'data'
+visualize(e)
 ```
 <p align="center">
   <img src="https://interpretable-ml.github.io/images/sampleExplanation.png" />
@@ -15,7 +16,8 @@ explain(x, f, data) # explain f(x) using a reference sample population 'data'
 
 By explaining many predictions at once you can gain an intuition of how the model behaves across an entire dataset:
 ```python
-[explain(data[i,:], f, data) for i in range(size(data)[1])]
+ex = ESExplainer(f, data)
+visualize([ex.explain(data[i,:]) for i in range(size(data)[1])])
 ```
 <p align="center">
   <img src="https://interpretable-ml.github.io/images/sampleModelExplanation.png" />
@@ -30,9 +32,9 @@ pip install iml
 ```
 
 ```python
-import explain from iml
+import ESExplainer from iml
 
-explain(x, f, data)
+ESExplainer(f, data).explain(x)
 ```
 
 ### Julia
@@ -43,5 +45,5 @@ Pkg.add("IML")
 ```julia
 using IML
 
-explain(x, f, data)
+ESExplainer(f, data).explain(x)
 ```
