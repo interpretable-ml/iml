@@ -32,7 +32,7 @@ class LogitLink(Link):
         return 1/(1+np.exp(-x))
 
 
-def get_link_object(val):
+def convert_to_link(val):
     if isinstance(val, Link):
         return val
     else:

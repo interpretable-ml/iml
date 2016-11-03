@@ -30,7 +30,6 @@ function match_data!(model::Model, data::DenseData)
         error("Provided model function fails when applied to the provided data set: ", err)
     end
 
-    model.f(data.data[:,1:1])
     if model.outNames == nothing
         if length(size(outVal)) == 1
             model.outNames = [""]

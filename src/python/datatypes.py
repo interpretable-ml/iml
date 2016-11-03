@@ -29,10 +29,10 @@ class DenseData(Data):
         self.groups = args[1] if len(args) > 1 else [np.array([i]) for i in range(l)]
 
 
-def get_data_object(val):
+def convert_to_data(val):
     if isinstance(val, Data):
         return val
     elif type(val) == np.ndarray:
-        return DenseData([str(i) for i in range(val.shape[0])], val)
+        return DenseData([str(i) for i in range(val.shape[1])], val)
     else:
         assert False, "Unknown type passed as data object: "+str(type(val))

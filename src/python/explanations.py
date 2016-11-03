@@ -1,7 +1,7 @@
 from .common import Model
 from .common import Instance
 from .datatypes import Data
-
+from .links import Link
 
 class Explanation:
     def __init__(self):
@@ -15,7 +15,12 @@ class AdditiveExplanation(Explanation):
         self.effectsVar = effectsVar
         assert isinstance(instance, Instance)
         self.instance = instance
+        assert isinstance(link, Link)
+        self.link = link
         assert isinstance(model, Model)
         self.model = model
         assert isinstance(data, Data)
         self.data = data
+
+    def __repr__(self):
+        visualize()
