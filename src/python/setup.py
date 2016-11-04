@@ -9,7 +9,6 @@ setup(name='iml',
       author_email='slund1@cs.washington.edu',
       license='MIT',
       packages=['iml', 'iml.explainers'],
-      #package_dir={'': 'python'},
       data_files=[
           ('javascript/build', ['../javascript/build/bundle.js', '../javascript/build/logoSmallGray.png'])
       ],
@@ -17,9 +16,3 @@ setup(name='iml',
       test_suite='nose.collector',
       tests_require=['nose'],
       zip_safe=False)
-
-
-# # setuptools has an unresolved bug in develop
-# if sys.argv[1] == "develop":
-#     print(site.getsitepackages()[0])
-#     print("Warning develop is broken in setuptools when using package_dir! https://github.com/pypa/setuptools/issues/230")
