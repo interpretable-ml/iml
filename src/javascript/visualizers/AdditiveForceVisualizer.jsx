@@ -172,7 +172,7 @@ export default class AdditiveForceVisualizer extends React.Component {
         .attr("y", d => 48+topOffset)
       .merge(labels)
         .text(d => {
-          if (d.value !== undefined && d.value != null) {
+          if (d.value !== undefined && d.value != null && d.value != "") {
             return d.name+" = "+(isNaN(d.value) ? d.value : this.tickFormat(d.value));
           } else return d.name;
         })
