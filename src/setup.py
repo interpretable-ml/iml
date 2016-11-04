@@ -9,7 +9,10 @@ setup(name='iml',
       license='MIT',
       packages=['iml', 'iml.explainers'],
       package_dir={'iml': 'python'},
-      install_requires=['numpy', 'scipy'],
+      data_files=[
+          ('javascript/build', ['javascript/build/bundle.js', 'javascript/build/logoSmallGray.png'])
+      ],
+      install_requires=['numpy', 'scipy', 'esvalues'],
       test_suite='nose.collector',
       tests_require=['nose'],
       zip_safe=False)
