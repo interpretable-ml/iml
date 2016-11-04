@@ -3,6 +3,7 @@ from .common import Instance
 from .datatypes import Data
 from .links import Link
 
+
 class Explanation:
     def __init__(self):
         pass
@@ -21,6 +22,3 @@ class AdditiveExplanation(Explanation):
         self.model = model
         assert isinstance(data, Data)
         self.data = data
-
-    def __repr__(self):
-        visualize()

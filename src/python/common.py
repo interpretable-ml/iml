@@ -1,4 +1,5 @@
-from .datatypes import Data, DenseData
+from .datatypes import DenseData
+
 
 class Instance:
     def __init__(self, x, groupDisplayValues):
@@ -17,8 +18,8 @@ def match_instance_to_data(instance, data):
     assert isinstance(instance, Instance), "instance must be of type Instance!"
 
     if isinstance(data, DenseData):
-        if instance.groupDisplayValues == None:
-            instance.groupDisplayValues = [instance.x[0,group[0]] if len(group) == 1 else "" for group in data.groups]
+        if instance.groupDisplayValues is None:
+            instance.groupDisplayValues = [instance.x[0, group[0]] if len(group) == 1 else "" for group in data.groups]
         assert len(instance.groupDisplayValues) == len(data.groups)
         instance.groups = data.groups
 
@@ -43,11 +44,11 @@ def match_model_to_data(model, data):
         outVal = None
         try:
             outVal = model.f(data.data)
-        except Error:
+        except:
             print("Provided model function fails when applied to the provided data set.")
             raise
 
-        if model.outNames == None:
+        if model.outNames is None:
             if len(outVal.shape) == 1:
                 model.outNames = [""]
             else:

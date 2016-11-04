@@ -2,9 +2,10 @@ import os
 import string
 import json
 import random
-from IPython.core.display import display, HTML
+from IPython.core.display import HTML
 import base64
 from .explanations import Explanation, AdditiveExplanation
+
 
 errMsg = """
 <div style='color: #900; text-align: center;'>
@@ -18,7 +19,7 @@ def initjs():
     bundlePath = os.path.join(os.path.split(__file__)[0], "..", "javascript", "build", "bundle.js")
     bundleData = open(bundlePath, "r").read()
     logoPath = os.path.join(os.path.split(__file__)[0], "..", "javascript", "build", "logoSmallGray.png")
-    logoData = base64.b64encode(open(logoPath, "rb").read()).decode('ascii')
+    logoData = base64.b64encode(open(logoPath, "rb").read()).decode('utf-8')
     return HTML(
         "<div align='center'><img src='data:image/png;base64,{logoData}' /></div>".format(logoData=logoData) +
         "<script>{bundleData}</script>".format(bundleData=bundleData)
@@ -70,7 +71,8 @@ class SimpleListVisualizer:
 
 class AdditiveForceVisualizer:
     def __init__(self, e):
-        assert isinstance(e, AdditiveExplanation), "AdditiveForceVisualizer can only visualize AdditiveExplanation objects!"
+        assert isinstance(e, AdditiveExplanation), \
+            "AdditiveForceVisualizer can only visualize AdditiveExplanation objects!"
 
         # build the json data
         features = {}
@@ -96,3 +98,34 @@ class AdditiveForceVisualizer:
     document.getElementById('{id}')
   );
 </script>""".format(errMsg=errMsg, data=json.dumps(self.data), id=id_generator()))
+
+
+# class AdditiveForceArrayVisualizer:
+#     def __init__(self, e):
+#         assert isinstance(e, AdditiveExplanation), \
+#             "AdditiveForceVisualizer can only visualize AdditiveExplanation objects!"
+#
+#         # build the json data
+#         features = {}
+#         for i in filter(lambda j: e.effects[j] != 0, range(len(e.data.groupNames))):
+#             features[i] = {
+#                 "effect": e.effects[i],
+#                 "value": e.instance.groupDisplayValues[i]
+#             }
+#         self.data = {
+#             "outNames": e.model.outNames,
+#             "baseValue": e.baseValue,
+#             "link": str(e.link),
+#             "featureNames": e.data.groupNames,
+#             "features": features
+#         }
+#
+#     def html(self):
+#         return HTML("""
+# <div id='{id}'>{errMsg}</div>
+#  <script>
+#    if (window.IML) IML.ReactDom.render(
+#     IML.React.createElement(IML.AdditiveForceVisualizer, {data}),
+#     document.getElementById('{id}')
+#   );
+# </script>""".format(errMsg=errMsg, data=json.dumps(self.data), id=id_generator()))
