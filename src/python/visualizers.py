@@ -1,4 +1,6 @@
+from __future__ import unicode_literals
 import os
+import io
 import string
 import json
 import random
@@ -17,7 +19,7 @@ errMsg = """
 
 def initjs():
     bundlePath = os.path.join(os.path.split(__file__)[0], "..", "javascript", "build", "bundle.js")
-    bundleData = open(bundlePath, "r").read()
+    bundleData = io.open(bundlePath, encoding="utf-8").read()
     logoPath = os.path.join(os.path.split(__file__)[0], "..", "javascript", "build", "logoSmallGray.png")
     logoData = base64.b64encode(open(logoPath, "rb").read()).decode('utf-8')
     return HTML(
