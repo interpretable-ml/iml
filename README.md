@@ -33,6 +33,7 @@ pip install iml
 
 ```python
 import ESExplainer from iml
+iml.initjs()
 
 ESExplainer(f, data).explain(x)
 ```
@@ -44,6 +45,7 @@ Pkg.add("IML")
 
 ```julia
 using IML
+IML.initjs()
 
 ESExplainer(f, data).explain(x)
 ```
