@@ -2,3 +2,5 @@ node_modules
 __pycache__
 iml.egg-info
 *.pyc
+src/python/build
+src/python/dist

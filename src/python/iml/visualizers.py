@@ -17,10 +17,17 @@ errMsg = """
 </div>"""
 
 
+def js_build_dir():
+    path = os.path.join(os.path.split(__file__)[0], "..", "..", "javascript", "build")
+    if not os.path.isdir(path):
+        path = os.path.join(os.path.split(__file__)[0], "..", "javascript", "build")
+    return path
+
+
 def initjs():
-    bundlePath = os.path.join(os.path.split(__file__)[0], "..", "javascript", "build", "bundle.js")
+    bundlePath = os.path.join(js_build_dir(), "bundle.js")
     bundleData = io.open(bundlePath, encoding="utf-8").read()
-    logoPath = os.path.join(os.path.split(__file__)[0], "..", "javascript", "build", "logoSmallGray.png")
+    logoPath = os.path.join(js_build_dir(), "logoSmallGray.png")
     logoData = base64.b64encode(open(logoPath, "rb").read()).decode('utf-8')
     return HTML(
         "<div align='center'><img src='data:image/png;base64,{logoData}' /></div>".format(logoData=logoData) +
