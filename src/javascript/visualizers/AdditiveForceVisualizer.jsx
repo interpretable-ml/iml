@@ -76,8 +76,9 @@ export default class AdditiveForceVisualizer extends React.Component {
       .tickPadding(-18);
 
     // draw and then listen for resize events
-    this.draw();
+    //this.draw();
     window.addEventListener("resize", this.redraw);
+    window.setTimeout(this.redraw, 50); // re-draw after interface has updated
   }
 
   componentDidUpdate() {

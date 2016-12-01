@@ -10,10 +10,11 @@ class Explanation:
 
 
 class AdditiveExplanation(Explanation):
-    def __init__(self, baseValue, effects, effectsVar, instance, link, model, data):
-        self.baseValue = baseValue
+    def __init__(self, base_value, out_value, effects, effects_var, instance, link, model, data):
+        self.base_value = base_value
+        self.out_value = out_value
         self.effects = effects
-        self.effectsVar = effectsVar
+        self.effects_var = effects_var
         assert isinstance(instance, Instance)
         self.instance = instance
         assert isinstance(link, Link)

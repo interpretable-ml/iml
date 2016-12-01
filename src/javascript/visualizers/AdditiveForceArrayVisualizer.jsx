@@ -94,8 +94,9 @@ export default class AdditiveForceArrayVisualizer extends React.Component {
     this.svg.on("mouseout", x => this.mouseOut(x));
 
     // draw and then listen for resize events
-    this.draw();
+    //this.draw();
     window.addEventListener("resize", this.redraw);
+    window.setTimeout(this.redraw, 50); // re-draw after interface has updated
   }
 
   componentDidUpdate() {
@@ -414,7 +415,7 @@ export default class AdditiveForceArrayVisualizer extends React.Component {
     }
 
     this.predValues = map(explanations, e=>sum(map(e.features, x=>x.effect)));
-    
+
     let width = this.wrapper.node().offsetWidth;
     if (width == 0) return setTimeout(() => this.draw(explanations), 500);
 
