@@ -2,9 +2,9 @@ from .datatypes import DenseData
 
 
 class Instance:
-    def __init__(self, x, groupDisplayValues):
+    def __init__(self, x, group_display_values):
         self.x = x
-        self.groupDisplayValues = groupDisplayValues
+        self.group_display_values = group_display_values
 
 
 def convert_to_instance(val):
@@ -18,9 +18,9 @@ def match_instance_to_data(instance, data):
     assert isinstance(instance, Instance), "instance must be of type Instance!"
 
     if isinstance(data, DenseData):
-        if instance.groupDisplayValues is None:
-            instance.groupDisplayValues = [instance.x[0, group[0]] if len(group) == 1 else "" for group in data.groups]
-        assert len(instance.groupDisplayValues) == len(data.groups)
+        if instance.group_display_values is None:
+            instance.group_display_values = [instance.x[0, group[0]] if len(group) == 1 else "" for group in data.groups]
+        assert len(instance.group_display_values) == len(data.groups)
         instance.groups = data.groups
 
 
@@ -41,15 +41,15 @@ def match_model_to_data(model, data):
     assert isinstance(model, Model), "model must be of type Model!"
 
     if isinstance(data, DenseData):
-        outVal = None
+        out_val = None
         try:
-            outVal = model.f(data.data)
+            out_val = model.f(data.data)
         except:
             print("Provided model function fails when applied to the provided data set.")
             raise
 
         if model.outNames is None:
-            if len(outVal.shape) == 1:
-                model.outNames = [""]
+            if len(out_val.shape) == 1:
+                model.outNames = ["output value"]
             else:
-                model.outNames = ["" for i in range(outVal.shape[0])]
+                model.outNames = ["output value "+str(i) for i in range(out_val.shape[0])]
