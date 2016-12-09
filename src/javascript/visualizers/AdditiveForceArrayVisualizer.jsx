@@ -344,6 +344,10 @@ export default class AdditiveForceArrayVisualizer extends React.Component {
       each(this.props.explanations, (e,i)=> e.xmap = e.features[ind].value);
       let explanations2 = sortBy(this.props.explanations, x=>x.xmap);
       let xvals = map(explanations2, x=>x.xmap);
+      if (typeof(xvals[0]) == "string") {
+        alert("Ordering by category names is not yet supported.");
+        return;
+      }
       let xmin = min(xvals);
       let xmax = max(xvals);
       let binSize = (xmax - xmin)/100;

@@ -36,8 +36,13 @@ def id_generator(size=20, chars=string.ascii_uppercase + string.digits):
     return "i"+''.join(random.choice(chars) for _ in range(size))
 
 
-def ensure_float(x):
-    return float(np.asscalar(x) if isinstance(x, np.generic) else x)
+def ensure_not_numpy(x):
+    if isinstance(x, bytes):
+        return x.decode()
+    elif isinstance(x, np.generic):
+        return float(np.asscalar(x))
+    else:
+        return x
 
 
 def visualize(e):
@@ -57,16 +62,16 @@ class SimpleListVisualizer:
 
         # build the json data
         features = {}
-        for i in filter(lambda j: e.effects[j] != 0, range(len(e.data.groupNames))):
+        for i in filter(lambda j: e.effects[j] != 0, range(len(e.data.group_names))):
             features[i] = {
                 "effect": e.effects[i],
                 "value": e.instance.group_display_values[i]
             }
         self.data = {
-            "outNames": e.model.outNames,
+            "outNames": e.model.out_names,
             "base_value": e.base_value,
             "link": str(e.link),
-            "featureNames": e.data.groupNames,
+            "featureNames": e.data.group_names,
             "features": features
         }
 
@@ -88,17 +93,17 @@ class AdditiveForceVisualizer:
 
         # build the json data
         features = {}
-        for i in filter(lambda j: e.effects[j] != 0, range(len(e.data.groupNames))):
+        for i in filter(lambda j: e.effects[j] != 0, range(len(e.data.group_names))):
             features[i] = {
-                "effect": ensure_float(e.effects[i]),
-                "value": ensure_float(e.instance.group_display_values[i])
+                "effect": ensure_not_numpy(e.effects[i]),
+                "value": ensure_not_numpy(e.instance.group_display_values[i])
             }
         self.data = {
-            "outNames": e.model.outNames,
-            "baseValue": ensure_float(e.base_value),
-            "outValue": ensure_float(e.out_value),
+            "outNames": e.model.out_names,
+            "baseValue": ensure_not_numpy(e.base_value),
+            "outValue": ensure_not_numpy(e.out_value),
             "link": str(e.link),
-            "featureNames": e.data.groupNames,
+            "featureNames": e.data.group_names,
             "features": features
         }
 
@@ -133,22 +138,22 @@ class AdditiveForceArrayVisualizer:
         # build the json data
         clustOrder = np.argsort(clustOrder) # inverse permutation
         self.data = {
-            "outNames": arr[0].model.outNames,
+            "outNames": arr[0].model.out_names,
             "baseValue": arr[0].base_value,
             "link": arr[0].link.__str__(),
-            "featureNames": arr[0].data.groupNames,
+            "featureNames": arr[0].data.group_names,
             "explanations": []
         }
         for (ind,e) in enumerate(arr):
             self.data["explanations"].append({
-                "outValue": ensure_float(e.out_value),
-                "simIndex": ensure_float(clustOrder[ind])+1,
+                "outValue": ensure_not_numpy(e.out_value),
+                "simIndex": ensure_not_numpy(clustOrder[ind])+1,
                 "features": {}
             })
-            for i in filter(lambda j: e.effects[j] != 0 or e.instance.x[0,j] != 0, range(len(e.data.groupNames))):
+            for i in filter(lambda j: e.effects[j] != 0 or e.instance.x[0,j] != 0, range(len(e.data.group_names))):
                 self.data["explanations"][-1]["features"][i] = {
-                    "effect": ensure_float(e.effects[i]),
-                    "value": ensure_float(e.instance.group_display_values[i])
+                    "effect": ensure_not_numpy(e.effects[i]),
+                    "value": ensure_not_numpy(e.instance.group_display_values[i])
                 }
 
     def html(self):

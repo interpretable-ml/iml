@@ -25,9 +25,9 @@ def match_instance_to_data(instance, data):
 
 
 class Model:
-    def __init__(self, f, outNames):
+    def __init__(self, f, out_names):
         self.f = f
-        self.outNames = outNames
+        self.out_names = out_names
 
 
 def convert_to_model(val):
@@ -48,8 +48,8 @@ def match_model_to_data(model, data):
             print("Provided model function fails when applied to the provided data set.")
             raise
 
-        if model.outNames is None:
+        if model.out_names is None:
             if len(out_val.shape) == 1:
-                model.outNames = ["output value"]
+                model.out_names = ["output value"]
             else:
-                model.outNames = ["output value "+str(i) for i in range(out_val.shape[0])]
+                model.out_names = ["output value "+str(i) for i in range(out_val.shape[0])]
