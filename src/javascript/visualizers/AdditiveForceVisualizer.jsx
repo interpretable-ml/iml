@@ -138,6 +138,8 @@ export default class AdditiveForceVisualizer extends React.Component {
     let lineFunction = line()
       .x(d => d[0])
       .y(d => d[1]);
+
+    data = this.props.hideBars ? [] : data;
     let blocks = this.mainGroup.selectAll(".force-bar-blocks").data(data);
     blocks.enter().append("path")
         .attr("class", "force-bar-blocks")
@@ -167,6 +169,7 @@ export default class AdditiveForceVisualizer extends React.Component {
     });
 
     let labels = this.onTopGroup.selectAll(".force-bar-labels").data(filteredData);
+    labels.exit().remove();
     labels = labels.enter().append("text")
         .attr("class", "force-bar-labels")
         .attr("font-size", "12px")
@@ -183,19 +186,20 @@ export default class AdditiveForceVisualizer extends React.Component {
           d.innerTextWidth = this.getComputedTextLength();
           return "none";
         });
-    labels.exit().remove();
     this.filteredData = filteredData;
 
     // compute where the text labels should go
-    pos = joinPoint + scale.invert(5);
-    for (let i=joinPointIndex; i < data.length; ++i) {
-      data[i].textx = pos;
-      pos += scale.invert(data[i].textWidth+10);
-    }
-    pos = joinPoint - scale.invert(5);
-    for (let i=joinPointIndex-1; i >= 0; --i) {
-      data[i].textx = pos;
-      pos -= scale.invert(data[i].textWidth+10);
+    if (data.length > 0) {
+      pos = joinPoint + scale.invert(5);
+      for (let i=joinPointIndex; i < data.length; ++i) {
+        data[i].textx = pos;
+        pos += scale.invert(data[i].textWidth+10);
+      }
+      pos = joinPoint - scale.invert(5);
+      for (let i=joinPointIndex-1; i >= 0; --i) {
+        data[i].textx = pos;
+        pos -= scale.invert(data[i].textWidth+10);
+      }
     }
 
     labels
@@ -296,7 +300,7 @@ export default class AdditiveForceVisualizer extends React.Component {
         .attr("stroke-width", 6)
         .text(format(",.2f")(this.invLinkFunction(joinPoint - totalNegEffects)))
         .attr("opacity", 1);
-
+      console.log("joinPoint", joinPoint, scaleOffset, topOffset, totalNegEffects)
     this.joinPointLabel
         .attr("x", scale(joinPoint) + scaleOffset)
         .attr("y", -5+topOffset)
@@ -315,46 +319,51 @@ export default class AdditiveForceVisualizer extends React.Component {
         .text(this.props.outNames[0])
         .attr("opacity", 0.5);
 
-    this.joinPointTitleLeft
-        .attr("x", scale(joinPoint) + scaleOffset - 16)
-        .attr("y", -38+topOffset)
-        .attr('text-anchor', 'end')
-        .attr('font-size', '13')
-        .attr("fill", this.colors[0])
-        .text("higher")
-        .attr("opacity", 1.0);
-    this.joinPointTitleRight
-        .attr("x", scale(joinPoint) + scaleOffset + 16)
-        .attr("y", -38+topOffset)
-        .attr('text-anchor', 'start')
-        .attr('font-size', '13')
-        .attr("fill", this.colors[1])
-        .text("lower")
-        .attr("opacity", 1.0);
-    this.joinPointTitleLeftArrow
-        .attr("x", scale(joinPoint) + scaleOffset + 7)
-        .attr("y", -42+topOffset)
-        .attr('text-anchor', 'end')
-        .attr('font-size', '13')
-        .attr("fill", this.colors[0])
-        .text("→")
-        .attr("opacity", 1.0);
-    this.joinPointTitleRightArrow
-        .attr("x", scale(joinPoint) + scaleOffset - 7)
-        .attr("y", -36+topOffset)
-        .attr('text-anchor', 'start')
-        .attr('font-size', '13')
-        .attr("fill", this.colors[1])
-        .text("←")
-        .attr("opacity", 1.0);
-    this.baseValueTitle
-        .attr("x", this.scaleCentered(0))
-        .attr("y", -22+topOffset)
-        .attr('text-anchor', 'middle')
-        .attr('font-size', '12')
-        .attr("fill", "#000")
-        .text("base value")
-        .attr("opacity", 0.5);
+    if (!this.props.hideBars) {
+      this.joinPointTitleLeft
+          .attr("x", scale(joinPoint) + scaleOffset - 16)
+          .attr("y", -38+topOffset)
+          .attr('text-anchor', 'end')
+          .attr('font-size', '13')
+          .attr("fill", this.colors[0])
+          .text("higher")
+          .attr("opacity", 1.0);
+      this.joinPointTitleRight
+          .attr("x", scale(joinPoint) + scaleOffset + 16)
+          .attr("y", -38+topOffset)
+          .attr('text-anchor', 'start')
+          .attr('font-size', '13')
+          .attr("fill", this.colors[1])
+          .text("lower")
+          .attr("opacity", 1.0);
+    
+      this.joinPointTitleLeftArrow
+          .attr("x", scale(joinPoint) + scaleOffset + 7)
+          .attr("y", -42+topOffset)
+          .attr('text-anchor', 'end')
+          .attr('font-size', '13')
+          .attr("fill", this.colors[0])
+          .text("→")
+          .attr("opacity", 1.0);
+      this.joinPointTitleRightArrow
+          .attr("x", scale(joinPoint) + scaleOffset - 7)
+          .attr("y", -36+topOffset)
+          .attr('text-anchor', 'start')
+          .attr('font-size', '13')
+          .attr("fill", this.colors[1])
+          .text("←")
+          .attr("opacity", 1.0);
+    }
+    if (!this.props.hideBaseValueLabel) {
+      this.baseValueTitle
+          .attr("x", this.scaleCentered(0))
+          .attr("y", -22+topOffset)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', '12')
+          .attr("fill", "#000")
+          .text("base value")
+          .attr("opacity", 0.5);
+    }
   }
 
   componentWillUnmount() {

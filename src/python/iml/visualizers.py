@@ -139,7 +139,7 @@ class AdditiveForceArrayVisualizer:
         clustOrder = np.argsort(clustOrder) # inverse permutation
         self.data = {
             "outNames": arr[0].model.out_names,
-            "baseValue": arr[0].base_value,
+            "baseValue": ensure_not_numpy(arr[0].base_value),
             "link": arr[0].link.__str__(),
             "featureNames": arr[0].data.group_names,
             "explanations": []

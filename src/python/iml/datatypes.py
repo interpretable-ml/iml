@@ -35,6 +35,6 @@ def convert_to_data(val):
     if isinstance(val, Data):
         return val
     elif type(val) == np.ndarray:
-        return DenseData([str(i) for i in range(val.shape[1])], val)
+        return DenseData(val, [str(i) for i in range(val.shape[1])])
     else:
         assert False, "Unknown type passed as data object: "+str(type(val))
