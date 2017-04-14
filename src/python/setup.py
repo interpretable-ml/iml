@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 setup(name='iml',
-      version='0.2.3',
+      version='0.2.5',
       description='Interpretable Machine Learning (iML) package. Explain the predictions of any model.',
       url='http://github.com/interpretable-ml/iml',
       author='Scott Lundberg',
