@@ -4,10 +4,7 @@ import io
 import string
 import json
 import random
-try:
-    from IPython.core.display import display, HTML
-except:
-    pass
+from IPython.core.display import display, HTML
 import base64
 import numpy as np
 import scipy.cluster
