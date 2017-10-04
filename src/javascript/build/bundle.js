@@ -32309,7 +32309,7 @@ var AdditiveForceVisualizer = function (_React$Component) {
       labels = labels.enter().append("text").attr("class", "force-bar-labels").attr("font-size", "12px").attr("y", function (d) {
         return 48 + topOffset;
       }).merge(labels).text(function (d) {
-        if (d.value !== undefined && d.value != null && d.value != "") {
+        if (d.value !== undefined && d.value !== null && d.value !== "") {
           return d.name + " = " + (isNaN(d.value) ? d.value : _this3.tickFormat(d.value));
         } else return d.name;
       }).attr("fill", function (d) {

@@ -4,7 +4,10 @@ import io
 import string
 import json
 import random
-from IPython.core.display import display, HTML
+try:
+    from IPython.core.display import display, HTML
+except:
+    pass
 import base64
 import numpy as np
 import scipy.cluster
@@ -39,6 +42,8 @@ def id_generator(size=20, chars=string.ascii_uppercase + string.digits):
 def ensure_not_numpy(x):
     if isinstance(x, bytes):
         return x.decode()
+    elif isinstance(x, np.str):
+        return str(x)
     elif isinstance(x, np.generic):
         return float(np.asscalar(x))
     else:
@@ -55,6 +60,20 @@ def visualize(e):
     else:
         assert False, "visualize() can only display Explanation objects (or arrays of them)!"
 
+try:
+    # register the visualize function with IPython
+    ip = get_ipython()
+    svg_formatter=ip.display_formatter.formatters['text/html']
+    svg_formatter.for_type(Explanation, lambda x: visualize(x).data)
+    old_list_formatter = svg_formatter.for_type(list)
+    def try_list_display(e):
+        if isinstance(e, collections.Sequence) and len(e) > 0 and isinstance(e[0], AdditiveExplanation):
+            return visualize(e).data
+        else:
+            return str(e) if old_list_formatter is None else old_list_formatter(e)
+    svg_formatter.for_type(list, try_list_display)
+except:
+    pass
 
 class SimpleListVisualizer:
     def __init__(self, e):
@@ -125,8 +144,9 @@ class AdditiveForceArrayVisualizer:
 
         # order the samples by their position in a hierarchical clustering
         if all([e.model.f == arr[1].model.f for e in arr]):
-            m = np.vstack([e.effects for e in arr])
-            D = np.vstack([np.sum((m - m[i,:])**2, 1) for i in range(m.shape[0])])
+            #m = np.vstack([e.effects for e in arr])
+            D = scipy.spatial.distance.pdist(np.vstack([e.effects for e in arr]), 'sqeuclidean')
+            #D = np.vstack([np.sum((m - m[i,:])**2, 1) for i in range(m.shape[0])])
             clustOrder = scipy.cluster.hierarchy.leaves_list(scipy.cluster.hierarchy.complete(D))
         else:
             assert False, "Tried to visualize an array of explanations from different models!"
