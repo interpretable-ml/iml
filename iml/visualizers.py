@@ -123,7 +123,8 @@ class AdditiveForceVisualizer:
             "features": features
         }
 
-    def html(self):
+    def html(self, label_margin=20):
+        self.data["labelMargin"] = label_margin
         return HTML("""
 <div id='{id}'>{err_msg}</div>
  <script>

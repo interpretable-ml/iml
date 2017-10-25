@@ -32341,7 +32341,7 @@ var AdditiveForceVisualizer = function (_React$Component) {
 
       // Now that we know the text widths we further filter by what fits on the screen
       filteredData = (0, _lodash.filter)(filteredData, function (d) {
-        return scale(d.textx) + scaleOffset > 20 && scale(d.textx) + scaleOffset < width - 20;
+        return scale(d.textx) + scaleOffset > _this3.props.labelMargin && scale(d.textx) + scaleOffset < width - _this3.props.labelMargin;
       });
       this.filteredData2 = filteredData;
 
