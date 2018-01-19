@@ -205,7 +205,7 @@ export default class AdditiveForceVisualizer extends React.Component {
     labels
         .attr("x", d =>scale(d.textx) + scaleOffset + (d.effect > 0 ? -d.textWidth/2 : d.textWidth/2))
         .attr("text-anchor", "middle")//d => d.effect > 0 ? 'end' : 'start');
-    
+
     // Now that we know the text widths we further filter by what fits on the screen
     filteredData = filter(filteredData, d => {
       return scale(d.textx) + scaleOffset > this.props.labelMargin && scale(d.textx) + scaleOffset < width - this.props.labelMargin;
@@ -372,7 +372,7 @@ export default class AdditiveForceVisualizer extends React.Component {
 
   render() {
     return (
-      <svg ref={x=>this.svg=select(x)} style={{userSelect: "none", display: "block", fontFamily: "arial", sansSerif: true}}>
+      <svg ref={x=>this.svg=select(x)} style={{userSelect: "none", display: "block", fontFamily: "arial", sansSerif: true, width: "100%"}}>
         <style dangerouslySetInnerHTML={{__html: `
           .force-bar-axis path {
             fill: none;

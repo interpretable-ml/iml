@@ -31772,8 +31772,8 @@ var AdditiveForceArrayVisualizer = function (_React$Component) {
         return _this5.draw(explanations);
       }, 500);
 
-      this.svg.style('height', this.height);
-      this.svg.style('width', width);
+      this.svg.style('height', this.height + "px");
+      this.svg.style('width', width + "px");
 
       var xvals = (0, _lodash.map)(explanations, function (x) {
         return x.xmap;
@@ -32418,7 +32418,7 @@ var AdditiveForceVisualizer = function (_React$Component) {
         'svg',
         { ref: function ref(x) {
             return _this4.svg = (0, _d3Selection.select)(x);
-          }, style: { userSelect: "none", display: "block", fontFamily: "arial", sansSerif: true } },
+          }, style: { userSelect: "none", display: "block", fontFamily: "arial", sansSerif: true, width: "100%" } },
         _react2.default.createElement('style', { dangerouslySetInnerHTML: { __html: '\n          .force-bar-axis path {\n            fill: none;\n            opacity: 0.4;\n          }\n          .force-bar-axis paths {\n            display: none;\n          }\n          .tick line {\n            stroke: #000;\n            stroke-width: 1px;\n            opacity: 0.4;\n          }\n          .tick text {\n            fill: #000;\n            opacity: 0.5;\n            font-size: 12px;\n            padding: 0px;\n          }' } })
       );
     }
