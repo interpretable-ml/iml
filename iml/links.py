@@ -35,5 +35,9 @@ class LogitLink(Link):
 def convert_to_link(val):
     if isinstance(val, Link):
         return val
+    elif val == "identity":
+        return IdentityLink()
+    elif val == "logit":
+        return LogitLink()
     else:
         assert False, "Passed link object must be a subclass of iml.Link"
