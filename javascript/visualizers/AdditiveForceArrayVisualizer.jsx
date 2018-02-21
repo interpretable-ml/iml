@@ -423,8 +423,8 @@ export default class AdditiveForceArrayVisualizer extends React.Component {
     let width = this.wrapper.node().offsetWidth;
     if (width == 0) return setTimeout(() => this.draw(explanations), 500);
 
-    this.svg.style('height', this.height);
-    this.svg.style('width', width);
+    this.svg.style('height', this.height+"px");
+    this.svg.style('width', width+"px");
 
     let xvals = map(explanations, x=>x.xmap);
     this.xscale.domain([min(xvals), max(xvals)]).range([this.leftOffset,width]).clamp(true);

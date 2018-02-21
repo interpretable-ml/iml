@@ -1,5 +1,8 @@
 import numpy as np
-
+try:
+    import pandas as pd
+except ImportError:
+    pass
 
 class Data:
     def __init__(self):
@@ -36,5 +39,9 @@ def convert_to_data(val):
         return val
     elif type(val) == np.ndarray:
         return DenseData(val, [str(i) for i in range(val.shape[1])])
+    elif str(type(val)) == "<class 'pandas.core.series.Series'>":
+        return DenseData(val.as_matrix().reshape((1,len(val))), list(val.index))
+    elif str(type(val)) == "<class 'pandas.core.frame.DataFrame'>":
+        return DenseData(val.as_matrix(), list(val.columns))
     else:
         assert False, "Unknown type passed as data object: "+str(type(val))
