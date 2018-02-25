@@ -88,7 +88,8 @@ class SimpleListVisualizer:
             "base_value": e.base_value,
             "link": str(e.link),
             "featureNames": e.data.group_names,
-            "features": features
+            "features": features,
+            "plot_cmap":e.plot_cmap.plot_cmap
         }
 
     def html(self):
@@ -120,7 +121,8 @@ class AdditiveForceVisualizer:
             "outValue": ensure_not_numpy(e.out_value),
             "link": str(e.link),
             "featureNames": e.data.group_names,
-            "features": features
+            "features": features,
+            "plot_cmap":e.plot_cmap.plot_cmap
         }
 
     def html(self, label_margin=20):
@@ -160,7 +162,8 @@ class AdditiveForceArrayVisualizer:
             "baseValue": ensure_not_numpy(arr[0].base_value),
             "link": arr[0].link.__str__(),
             "featureNames": arr[0].data.group_names,
-            "explanations": []
+            "explanations": [],
+            "plot_cmap":arr[0].plot_cmap.plot_cmap
         }
         for (ind,e) in enumerate(arr):
             self.data["explanations"].append({

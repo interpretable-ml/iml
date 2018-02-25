@@ -1,5 +1,6 @@
 from .common import Model
 from .common import Instance
+from .common import Plot_CMAP
 from .datatypes import Data
 from .links import Link
 
@@ -9,7 +10,7 @@ class Explanation:
 
 
 class AdditiveExplanation(Explanation):
-    def __init__(self, base_value, out_value, effects, effects_var, instance, link, model, data):
+    def __init__(self, base_value, out_value, effects, effects_var, instance, link, model, data,plot_cmap):
         self.base_value = base_value
         self.out_value = out_value
         self.effects = effects
@@ -22,6 +23,9 @@ class AdditiveExplanation(Explanation):
         self.model = model
         assert isinstance(data, Data)
         self.data = data
+        assert isinstance(plot_cmap,Plot_CMAP)
+        self.plot_cmap = plot_cmap
+
     # def _rdepr_pretty_(self, pp, cycle):
     #     print(pp)
     #     return visualizers.visualize(self)
