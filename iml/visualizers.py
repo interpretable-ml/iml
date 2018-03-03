@@ -10,6 +10,7 @@ import numpy as np
 import scipy.cluster
 from .explanations import Explanation, AdditiveExplanation
 import collections
+from .common import verify_valid_cmap
 
 
 err_msg = """
@@ -47,13 +48,14 @@ def ensure_not_numpy(x):
         return x
 
 
-def visualize(e):
+def visualize(e, plot_cmap="RdBu"):
+    plot_cmap = verify_valid_cmap(plot_cmap)
     if isinstance(e, AdditiveExplanation):
-        return AdditiveForceVisualizer(e).html()
+        return AdditiveForceVisualizer(e, plot_cmap=plot_cmap).html()
     elif isinstance(e, Explanation):
         return SimpleListVisualizer(e).html()
     elif isinstance(e, collections.Sequence) and len(e) > 0 and isinstance(e[0], AdditiveExplanation):
-        return AdditiveForceArrayVisualizer(e).html()
+        return AdditiveForceArrayVisualizer(e, plot_cmap=plot_cmap).html()
     else:
         assert False, "visualize() can only display Explanation objects (or arrays of them)!"
 
@@ -104,7 +106,7 @@ class SimpleListVisualizer:
 
 
 class AdditiveForceVisualizer:
-    def __init__(self, e):
+    def __init__(self, e, plot_cmap="RdBu"):
         assert isinstance(e, AdditiveExplanation), \
             "AdditiveForceVisualizer can only visualize AdditiveExplanation objects!"
 
@@ -122,7 +124,7 @@ class AdditiveForceVisualizer:
             "link": str(e.link),
             "featureNames": e.data.group_names,
             "features": features,
-            "plot_cmap":e.plot_cmap.plot_cmap
+            "plot_cmap": plot_cmap
         }
 
     def html(self, label_margin=20):
@@ -138,7 +140,7 @@ class AdditiveForceVisualizer:
 
 
 class AdditiveForceArrayVisualizer:
-    def __init__(self, arr):
+    def __init__(self, arr, plot_cmap="RdBu"):
         assert isinstance(arr[0], AdditiveExplanation), \
             "AdditiveForceArrayVisualizer can only visualize arrays of AdditiveExplanation objects!"
 
@@ -163,7 +165,7 @@ class AdditiveForceArrayVisualizer:
             "link": arr[0].link.__str__(),
             "featureNames": arr[0].data.group_names,
             "explanations": [],
-            "plot_cmap":arr[0].plot_cmap.plot_cmap
+            "plot_cmap": plot_cmap
         }
         for (ind,e) in enumerate(arr):
             self.data["explanations"].append({

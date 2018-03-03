@@ -54,17 +54,6 @@ def match_model_to_data(model, data):
             else:
                 model.out_names = ["output value "+str(i) for i in range(out_val.shape[0])]
 
-
-class Plot_CMAP:
-    def __init__(self,plot_cmap):
-        self.plot_cmap = verify_valid_cmap(plot_cmap)
-
-def convert_to_plot_CMAP(val):
-    if isinstance(val,Plot_CMAP):
-            return val
-    else:
-        return Plot_CMAP(val)
-
 def verify_valid_cmap(cmap):
     assert (isinstance(cmap,str)
                 or isinstance(cmap,list)

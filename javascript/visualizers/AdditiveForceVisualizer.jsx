@@ -446,7 +446,7 @@ class AdditiveForceVisualizer extends React.Component {
       .attr("y", -22 + topOffset)
       .attr("text-anchor", "middle")
       .attr("font-size", "12")
-      .attr("fill", "#FFFFFF")
+      .attr("fill", "#000")
       .text(this.props.outNames[0])
       .attr("opacity", 0.5);
 
@@ -491,7 +491,7 @@ class AdditiveForceVisualizer extends React.Component {
         .attr("y", -22 + topOffset)
         .attr("text-anchor", "middle")
         .attr("font-size", "12")
-        .attr("fill", "#FFFFFF")
+        .attr("fill", "#000")
         .text("base value")
         .attr("opacity", 0.5);
     }
@@ -523,12 +523,12 @@ class AdditiveForceVisualizer extends React.Component {
             display: none;
           }
           .tick line {
-            stroke: #FFFFFF;
+            stroke: #000;
             stroke-width: 1px;
             opacity: 0.4;
           }
           .tick text {
-            fill: #FFFFFF;
+            fill: #000;
             opacity: 0.5;
             font-size: 12px;
             padding: 0px;
