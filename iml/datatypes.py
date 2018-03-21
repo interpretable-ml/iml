@@ -11,7 +11,7 @@ class Data:
 
 class DenseData(Data):
     def __init__(self, data, group_names, *args):
-        self.groups = args[0] if len(args) > 0 else [np.array([i]) for i in range(len(group_names))]
+        self.groups = args[0] if len(args) > 0 and args[0] != None else [np.array([i]) for i in range(len(group_names))]
 
         l = sum(len(g) for g in self.groups)
         num_samples = data.shape[0]
@@ -24,6 +24,7 @@ class DenseData(Data):
         assert valid, "# of names must match data matrix!"
 
         self.weights = args[1] if len(args) > 1 else np.ones(num_samples)
+        self.weights /= np.sum(self.weights)
         wl = len(self.weights)
         valid = (not t and wl == data.shape[0]) or (t and wl == data.shape[1])
         assert valid, "# weights must match data matrix!"
@@ -39,9 +40,9 @@ def convert_to_data(val):
         return val
     elif type(val) == np.ndarray:
         return DenseData(val, [str(i) for i in range(val.shape[1])])
-    elif str(type(val)) == "<class 'pandas.core.series.Series'>":
+    elif str(type(val)).endswith("'pandas.core.series.Series'>"):
         return DenseData(val.as_matrix().reshape((1,len(val))), list(val.index))
-    elif str(type(val)) == "<class 'pandas.core.frame.DataFrame'>":
+    elif str(type(val)).endswith("'pandas.core.frame.DataFrame'>"):
         return DenseData(val.as_matrix(), list(val.columns))
     else:
         assert False, "Unknown type passed as data object: "+str(type(val))
