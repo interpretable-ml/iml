@@ -1,5 +1,6 @@
-from .datatypes import DenseData
+from .datatypes import DenseData, DenseDataWithIndex
 import re
+import pandas as pd
 
 class Instance:
     def __init__(self, x, group_display_values):
@@ -12,6 +13,25 @@ def convert_to_instance(val):
         return val
     else:
         return Instance(val, None)
+
+
+class InstanceWithIndex(Instance):
+    def __init__(self, x, column_name, index_value, index_name, group_display_values):
+        Instance.__init__(self, x, group_display_values)
+        self.index_value = index_value
+        self.index_name = index_name
+        self.column_name = column_name
+
+    def convert_to_df(self):
+        index = pd.DataFrame(self.index_value, columns=[self.index_name])
+        data = pd.DataFrame(self.x, columns=self.column_name)
+        df = pd.concat([index, data], axis=1)
+        df = df.set_index(self.index_name)
+        return df
+
+
+def convert_to_instance_with_index(val, column_name, index_value, index_name):
+    return InstanceWithIndex(val, column_name, index_value, index_name, None)
 
 
 def match_instance_to_data(instance, data):
@@ -41,9 +61,11 @@ def match_model_to_data(model, data):
     assert isinstance(model, Model), "model must be of type Model!"
 
     if isinstance(data, DenseData):
-        out_val = None
         try:
-            out_val = model.f(data.data)
+            if isinstance(data, DenseDataWithIndex):
+                out_val = model.f(data.convert_to_df())
+            else:
+                out_val = model.f(data.data)
         except:
             print("Provided model function fails when applied to the provided data set.")
             raise
