@@ -34,8 +34,21 @@ class DenseData(Data):
         self.data = data
 
 
+class DenseDataWithIndex(DenseData):
+    def __init__(self, data, group_names, index, index_name, *args):
+        DenseData.__init__(self, data, group_names, *args)
+        self.index_value = index
+        self.index_name = index_name
 
-def convert_to_data(val):
+    def convert_to_df(self):
+        data = pd.DataFrame(self.data, columns=self.group_names)
+        index = pd.DataFrame(self.index_value, columns=[self.index_name])
+        df = pd.concat([index, data], axis=1)
+        df = df.set_index(self.index_name)
+        return df
+
+
+def convert_to_data(val, keep_index=False):
     if isinstance(val, Data):
         return val
     elif type(val) == np.ndarray:
@@ -43,6 +56,9 @@ def convert_to_data(val):
     elif str(type(val)).endswith("'pandas.core.series.Series'>"):
         return DenseData(val.as_matrix().reshape((1,len(val))), list(val.index))
     elif str(type(val)).endswith("'pandas.core.frame.DataFrame'>"):
-        return DenseData(val.as_matrix(), list(val.columns))
+        if keep_index:
+            return DenseDataWithIndex(val.as_matrix(), list(val.columns), val.index.values, val.index.name)
+        else:
+            return DenseData(val.as_matrix(), list(val.columns))
     else:
         assert False, "Unknown type passed as data object: "+str(type(val))
