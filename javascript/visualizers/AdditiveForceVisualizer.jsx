@@ -45,8 +45,43 @@ class AdditiveForceVisualizer extends React.Component {
     this.joinPointTitleRightArrow = this.svg.append("text");
     this.joinPointTitleRight = this.svg.append("text");
 
+    // Define the tooltip objects
+    this.hoverLabelBacking = this.svg.append("text")
+      .attr("x", 10)
+      .attr("y", 20)
+      .attr("text-anchor", "middle")
+      .attr("font-size", 12)
+      .attr("stroke", "#fff")
+      .attr("fill", "#fff")
+      .attr("stroke-width", "4")
+      .attr("stroke-linejoin", "round")
+      .text("")
+      .on("mouseover", d => {
+        this.hoverLabel.attr("opacity", 1);
+        this.hoverLabelBacking.attr("opacity", 1);
+      })
+      .on("mouseout", d => {
+        this.hoverLabel.attr("opacity", 0);
+        this.hoverLabelBacking.attr("opacity", 0);
+      });
+    this.hoverLabel = this.svg.append("text")
+      .attr("x", 10)
+      .attr("y", 20)
+      .attr("text-anchor", "middle")
+      .attr("font-size", 12)
+      .attr("fill", "#0f0")
+      .text("")
+      .on("mouseover", d => {
+        this.hoverLabel.attr("opacity", 1);
+        this.hoverLabelBacking.attr("opacity", 1);
+      })
+      .on("mouseout", d => {
+        this.hoverLabel.attr("opacity", 0);
+        this.hoverLabelBacking.attr("opacity", 0);
+      });
+
     // Create our colors and color gradients
-      // Verify custom color map
+    // Verify custom color map
     let plot_colors=undefined;
     if (typeof this.props.plot_cmap === "string")
     {
@@ -188,6 +223,16 @@ class AdditiveForceVisualizer extends React.Component {
       .x(d => d[0])
       .y(d => d[1]);
 
+    let getLabel = d => {
+      if (d.value !== undefined && d.value !== null && d.value !== "") {
+        return (
+          d.name +
+          " = " +
+          (isNaN(d.value) ? d.value : this.tickFormat(d.value))
+        );
+      } else return d.name;
+    };
+
     data = this.props.hideBars ? [] : data;
     let blocks = this.mainGroup.selectAll(".force-bar-blocks").data(data);
     blocks
@@ -211,7 +256,29 @@ class AdditiveForceVisualizer extends React.Component {
           [x + pointShiftStart, 14.5 + topOffset]
         ]);
       })
-      .attr("fill", d => (d.effect > 0 ? this.colors[0] : this.colors[1]));
+      .attr("fill", d => (d.effect > 0 ? this.colors[0] : this.colors[1]))
+      .on("mouseover", d => {
+        if (scale(Math.abs(d.effect)) < scale(totalEffect) / 50 ||
+            scale(Math.abs(d.effect)) < 10) {
+          let x = scale(d.x) + scaleOffset;
+          let w = scale(Math.abs(d.effect));
+          this.hoverLabel
+            .attr("opacity", 1)
+            .attr("x", x + w/2)
+            .attr("y", topOffset + 0.5)
+            .attr("fill", d.effect > 0 ? this.colors[0] : this.colors[1])
+            .text(getLabel(d));
+          this.hoverLabelBacking
+            .attr("opacity", 1)
+            .attr("x", x + w/2)
+            .attr("y", topOffset + 0.5)
+            .text(getLabel(d));
+        }
+      })
+      .on("mouseout", d => {
+        this.hoverLabel.attr("opacity", 0);
+        this.hoverLabelBacking.attr("opacity", 0);
+      });
     blocks.exit().remove();
 
     let filteredData = _.filter(data, d => {
