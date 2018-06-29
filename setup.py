@@ -5,7 +5,7 @@ from setuptools import setup
 # which depends on ~/.pypirc
 
 setup(name='iml',
-      version='0.6.0',
+      version='0.6.1',
       description='Interpretable Machine Learning (iML) package. Explain the predictions of any model.',
       url='http://github.com/interpretable-ml/iml',
       author='Scott Lundberg',

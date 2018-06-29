@@ -54,11 +54,11 @@ def convert_to_data(val, keep_index=False):
     elif type(val) == np.ndarray:
         return DenseData(val, [str(i) for i in range(val.shape[1])])
     elif str(type(val)).endswith("'pandas.core.series.Series'>"):
-        return DenseData(val.as_matrix().reshape((1,len(val))), list(val.index))
+        return DenseData(val.values.reshape((1,len(val))), list(val.index))
     elif str(type(val)).endswith("'pandas.core.frame.DataFrame'>"):
         if keep_index:
-            return DenseDataWithIndex(val.as_matrix(), list(val.columns), val.index.values, val.index.name)
+            return DenseDataWithIndex(val.values, list(val.columns), val.index.values, val.index.name)
         else:
-            return DenseData(val.as_matrix(), list(val.columns))
+            return DenseData(val.values, list(val.columns))
     else:
         assert False, "Unknown type passed as data object: "+str(type(val))
